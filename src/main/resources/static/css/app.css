@@ -1,0 +1,82 @@
+body {
+    background: #f4f6f9;
+}
+
+@media (min-width: 992px) {
+    .sidebar {
+        width: 230px;
+        min-height: calc(100vh - 56px);
+        position: sticky;
+        top: 56px;
+        align-self: flex-start;
+    }
+}
+
+.content {
+    min-width: 0;
+}
+
+.sidebar .nav-link {
+    color: #333;
+    border-radius: .375rem;
+    padding: .45rem .75rem;
+}
+
+.sidebar .nav-link i {
+    width: 1.4rem;
+    display: inline-block;
+}
+
+.sidebar .nav-link:hover {
+    background: #e7ebf0;
+}
+
+.sidebar .nav-link.active {
+    background: #0d6efd;
+    color: #fff;
+}
+
+.nav-heading {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #6c757d;
+    margin: .9rem .75rem .25rem;
+}
+
+.stat-card .stat-icon {
+    font-size: 1.8rem;
+    opacity: .8;
+}
+
+.stat-card .stat-value {
+    font-size: 1.35rem;
+    font-weight: 600;
+}
+
+.table td, .table th {
+    vertical-align: middle;
+}
+
+#lines-table select {
+    min-width: 220px;
+}
+
+#lines-table input {
+    min-width: 90px;
+}
+
+@media print {
+    body {
+        background: #fff;
+    }
+
+    .content {
+        padding: 0 !important;
+    }
+
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}

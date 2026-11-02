@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(${title}, ${section}, ~{::main})}">
+<body>
+<main>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0" th:text="${title}">Transactions</h1>
+        <a th:href="@{|/${section}/new|}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>
+            <span th:text="${isSale} ? 'New Sale' : 'New Purchase'"></span></a>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr><th>Bill No</th><th>Date</th><th th:text="${partyLabel}">Party</th><th class="text-end">Items</th>
+                    <th class="text-end">GST</th><th class="text-end">Total</th><th class="text-end">Paid</th><th class="text-end">Due</th>
+                    <th>Mode</th><th>By</th><th class="text-end">Actions</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${txns}">
+                    <td><a th:href="@{|/${section}/${t.id}|}" th:text="${t.billNumber}"></a></td>
+                    <td th:text="${@fmt.date(t.date)}"></td>
+                    <td th:text="${t.partyName}"></td>
+                    <td class="text-end" th:text="${#lists.size(t.items)}"></td>
+                    <td class="text-end text-muted" th:text="${@fmt.money(t.taxAmount)}"></td>
+                    <td class="text-end fw-medium" th:text="${@fmt.money(t.subtotal)}"></td>
+                    <td class="text-end" th:text="${@fmt.money(t.paid)}"></td>
+                    <td class="text-end" th:classappend="${t.due.signum() > 0} ? 'text-danger'" th:text="${@fmt.money(t.due)}"></td>
+                    <td th:text="${t.mode}"></td>
+                    <td class="text-muted" th:text="${t.createdBy}"></td>
+                    <td class="text-end text-nowrap">
+                        <a th:href="@{|/${section}/${t.id}|}" class="btn btn-sm btn-outline-secondary" title="View / print"><i class="bi bi-printer"></i></a>
+                        <form th:action="@{|/${section}/${t.id}/delete|}" method="post" class="d-inline"
+                              onsubmit="return confirm('Delete this bill? Stock and balances will be reversed.')">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(txns)}"><td colspan="11" class="text-center text-muted py-4">No records yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

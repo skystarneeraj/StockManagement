@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(${labelPlural}, ${section}, ~{::main})}">
+<body>
+<main th:with="isSupplier=${section == 'suppliers'}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-0" th:text="${labelPlural}">Parties</h1>
+            <div class="text-muted small">
+                <span th:text="${isSupplier} ? 'Total payable:' : 'Total receivable:'"></span>
+                <strong th:text="${@fmt.money(totalBalance)}"></strong>
+            </div>
+        </div>
+        <a th:href="@{|/${section}/new|}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add <span th:text="${label}"></span></a>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Name</th><th>Phone</th><th>GSTIN</th><th>State</th><th>Address</th><th class="text-end">Balance</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                <tr th:each="i : ${items}">
+                    <td class="fw-medium" th:text="${i.name}"></td>
+                    <td th:text="${i.phone}"></td>
+                    <td class="font-monospace small" th:text="${i.gstin}"></td>
+                    <td th:text="${i.state}"></td>
+                    <td class="text-muted" th:text="${i.address}"></td>
+                    <td class="text-end" th:classappend="${i.balance.signum() > 0} ? 'text-danger fw-semibold'" th:text="${@fmt.money(i.balance)}"></td>
+                    <td class="text-end text-nowrap">
+                        <a th:if="${i.balance.signum() > 0}" class="btn btn-sm btn-outline-success"
+                           th:href="@{/payments/new(type=${isSupplier ? 'SUPPLIER_PAYMENT' : 'CUSTOMER_RECEIPT'}, party=${i.id})}"
+                           th:title="${isSupplier} ? 'Pay supplier' : 'Receive payment'"><i class="bi bi-cash"></i></a>
+                        <a th:href="@{|/${section}/${i.id}/edit|}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <form th:action="@{|/${section}/${i.id}/delete|}" method="post" class="d-inline"
+                              onsubmit="return confirm('Delete this record?')">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(items)}"><td colspan="7" class="text-center text-muted py-4">Nothing here yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

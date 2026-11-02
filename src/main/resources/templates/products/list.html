@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Products', 'products', ~{::main})}">
+<body>
+<main>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <h1 class="h3 mb-0">Products</h1>
+        <div class="d-flex flex-wrap gap-2">
+            <form th:action="@{/products}" method="get" class="d-flex gap-2">
+                <input type="search" name="q" th:value="${q}" class="form-control" placeholder="Search name or code">
+                <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+            </form>
+            <a th:href="${low} ? @{/products} : @{/products(low=true)}" class="btn"
+               th:classappend="${low} ? 'btn-danger' : 'btn-outline-danger'"><i class="bi bi-exclamation-triangle"></i> Low stock</a>
+            <a th:href="@{/products/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Product</a>
+        </div>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr><th>Code</th><th>Name</th><th>Category</th><th>HSN</th><th class="text-end">GST</th>
+                    <th class="text-end">Cost</th><th class="text-end">Price</th><th class="text-end">Stock</th>
+                    <th>Expiry</th><th class="text-end">Actions</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${products}">
+                    <td class="text-muted" th:text="${p.code}"></td>
+                    <td class="fw-medium" th:text="${p.name}"></td>
+                    <td th:text="${p.category?.name}"></td>
+                    <td th:text="${p.hsnCode}"></td>
+                    <td class="text-end" th:text="${@fmt.rate(p.gstRate)}"></td>
+                    <td class="text-end" th:text="${@fmt.money(p.costPrice)}"></td>
+                    <td class="text-end" th:text="${@fmt.money(p.sellingPrice)}"></td>
+                    <td class="text-end">
+                        <span class="badge" th:classappend="${p.lowStock} ? 'text-bg-danger' : 'text-bg-success'"
+                              th:text="|${p.quantity} ${p.uom?.name ?: ''}|"></span>
+                    </td>
+                    <td th:text="${@fmt.date(p.expiryDate)}"></td>
+                    <td class="text-end text-nowrap">
+                        <a th:href="@{/products/{id}/edit(id=${p.id})}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <form th:action="@{/products/{id}/delete(id=${p.id})}" method="post" class="d-inline"
+                              onsubmit="return confirm('Delete this product?')">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(products)}"><td colspan="10" class="text-center text-muted py-4">No products found.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

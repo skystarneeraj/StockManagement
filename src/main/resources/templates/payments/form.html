@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Payment', 'payments', ~{::main})}">
+<body>
+<main th:with="isSupplier=${payment.type.name() == 'SUPPLIER_PAYMENT'}">
+    <h1 class="h3 mb-3" th:text="${isSupplier} ? 'Pay Supplier' : 'Receive Payment from Customer'">Payment</h1>
+    <ul class="nav nav-pills mb-3">
+        <li class="nav-item"><a class="nav-link" th:classappend="${!isSupplier} ? 'active'"
+                                th:href="@{/payments/new(type='CUSTOMER_RECEIPT')}">From customer</a></li>
+        <li class="nav-item"><a class="nav-link" th:classappend="${isSupplier} ? 'active'"
+                                th:href="@{/payments/new(type='SUPPLIER_PAYMENT')}">To supplier</a></li>
+    </ul>
+    <div class="card" style="max-width: 700px">
+        <div class="card-body">
+            <form th:action="@{/payments}" th:object="${payment}" method="post">
+                <input type="hidden" th:field="*{type}">
+                <div class="mb-3" th:if="${isSupplier}">
+                    <label class="form-label" for="supplier">Supplier *</label>
+                    <select id="supplier" name="supplier" class="form-select" required>
+                        <option value="">-- Select --</option>
+                        <option th:each="s : ${suppliers}" th:value="${s.id}"
+                                th:text="|${s.name} (owed ${@fmt.money(s.balance)})|"
+                                th:selected="${payment.supplier != null and payment.supplier.id == s.id}"></option>
+                    </select>
+                    <div class="form-text" th:if="${#lists.isEmpty(suppliers)}">No supplier has an outstanding balance.</div>
+                </div>
+                <div class="mb-3" th:unless="${isSupplier}">
+                    <label class="form-label" for="customer">Customer *</label>
+                    <select id="customer" name="customer" class="form-select" required>
+                        <option value="">-- Select --</option>
+                        <option th:each="c : ${customers}" th:value="${c.id}"
+                                th:text="|${c.name} (owes ${@fmt.money(c.balance)})|"
+                                th:selected="${payment.customer != null and payment.customer.id == c.id}"></option>
+                    </select>
+                    <div class="form-text" th:if="${#lists.isEmpty(customers)}">No customer has an outstanding balance.</div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="amount">Amount *</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" th:field="*{amount}" th:errorclass="is-invalid" required>
+                        <div class="invalid-feedback" th:errors="*{amount}"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="date">Date *</label>
+                        <input type="date" class="form-control" th:field="*{date}" th:errorclass="is-invalid" required>
+                        <div class="invalid-feedback" th:errors="*{date}"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="mode">Mode</label>
+                        <select class="form-select" th:field="*{mode}">
+                            <option th:each="m : ${ {'Cash', 'UPI', 'Card', 'Bank Transfer', 'Cheque'} }" th:value="${m}" th:text="${m}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="note">Note</label>
+                    <input type="text" class="form-control" th:field="*{note}" th:errorclass="is-invalid">
+                    <div class="invalid-feedback" th:errors="*{note}"></div>
+                </div>
+                <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save Payment</button>
+                <a th:href="@{/payments}" class="btn btn-link">Cancel</a>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

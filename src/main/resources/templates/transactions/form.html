@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(${title}, ${section}, ~{::main})}">
+<body>
+<main>
+    <h1 class="h3 mb-3" th:text="${isSale} ? 'New Sale' : 'New Purchase'">New</h1>
+    <form id="txn-form" th:action="@{|/${section}|}" th:object="${form}" method="post"
+          th:data-kind="${isSale} ? 'sale' : 'purchase'">
+        <div class="card mb-3">
+            <div class="card-body row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="partyId" th:text="|${partyLabel} *|">Party</label>
+                    <select id="partyId" name="partyId" class="form-select" required>
+                        <option value="">-- Select --</option>
+                        <option th:each="p : ${parties}" th:value="${p.id}"
+                                th:text="${p.phone != null and !#strings.isEmpty(p.phone)} ? |${p.name} (${p.phone})| : ${p.name}"
+                                th:selected="${p.id == form.partyId}"></option>
+                    </select>
+                    <div class="form-text">
+                        Not listed? <a th:href="${isSale} ? @{/customers/new} : @{/suppliers/new}" target="_blank">
+                        Add a new <span th:text="${#strings.toLowerCase(partyLabel)}"></span></a>, then reload.
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="date">Date</label>
+                    <input type="date" class="form-control" th:field="*{date}">
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">Items</div>
+            <div class="table-responsive">
+                <table class="table mb-0" id="lines-table">
+                    <thead>
+                    <tr><th>Product</th><th>In stock</th><th style="width: 120px">Qty</th>
+                        <th style="width: 150px" th:text="${isSale} ? 'Selling price' : 'Cost price'">Price</th>
+                        <th class="text-end">GST</th><th class="text-end">Tax</th>
+                        <th class="text-end">Total</th><th></th></tr>
+                    </thead>
+                    <tbody id="lines">
+                    <tr th:each="line, st : *{lines}">
+                        <td>
+                            <select class="form-select product-select" data-field="productId"
+                                    th:name="|lines[${st.index}].productId|">
+                                <option value="">-- Select product --</option>
+                                <option th:each="p : ${products}" th:value="${p.id}"
+                                        th:text="|${p.code} - ${p.name}|"
+                                        th:data-price="${isSale ? p.sellingPrice : p.costPrice}"
+                                        th:data-stock="${p.quantity}"
+                                        th:data-uom="${p.uom?.name}"
+                                        th:data-gst="${p.gstRate}"
+                                        th:selected="${p.id == line.productId}"></option>
+                            </select>
+                        </td>
+                        <td class="stock-cell text-muted text-nowrap"></td>
+                        <td><input type="number" min="1" class="form-control qty" data-field="quantity"
+                                   th:name="|lines[${st.index}].quantity|" th:value="${line.quantity}"></td>
+                        <td><input type="number" min="0" step="0.01" class="form-control price" data-field="price"
+                                   th:name="|lines[${st.index}].price|" th:value="${line.price}"></td>
+                        <td class="line-gst text-end text-nowrap text-muted"></td>
+                        <td class="line-tax text-end text-nowrap">0.00</td>
+                        <td class="line-total text-end text-nowrap">0.00</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-line" title="Remove"><i class="bi bi-x-lg"></i></button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-body">
+                <button type="button" id="add-line" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add item</button>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label" for="mode">Payment mode</label>
+                            <select class="form-select" th:field="*{mode}">
+                                <option th:each="m : ${ {'Cash', 'UPI', 'Card', 'Bank Transfer', 'Cheque', 'Credit'} }"
+                                        th:value="${m}" th:text="${m}"></option>
+                            </select>
+                        </div>
+                        <label class="form-label" for="description">Notes</label>
+                        <textarea class="form-control" rows="2" th:field="*{description}"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <span>Taxable value</span><span id="taxable">0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>GST <span class="text-muted small">(CGST + SGST, or IGST for other states)</span></span>
+                            <span id="tax">0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between fs-5 mb-3 border-top pt-2">
+                            <span>Total</span><strong id="subtotal">0.00</strong>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="paid">Amount paid</label>
+                            <div class="input-group">
+                                <input type="number" min="0" step="0.01" class="form-control" th:field="*{paid}">
+                                <button type="button" class="btn btn-outline-secondary" id="pay-full">Paid in full</button>
+                                <div class="invalid-feedback">Cannot exceed the subtotal.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between fs-5 text-danger">
+                            <span>Balance due</span><strong id="due">0.00</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button class="btn btn-primary btn-lg"><i class="bi bi-check-lg"></i> Save</button>
+            <a th:href="@{|/${section}|}" class="btn btn-link">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

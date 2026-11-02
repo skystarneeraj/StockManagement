@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Company Settings', 'settings', ~{::main})}">
+<body>
+<main>
+    <h1 class="h3 mb-1">Company Settings</h1>
+    <p class="text-muted">Your business details, printed on every tax invoice.</p>
+    <div class="card" style="max-width: 750px">
+        <div class="card-body">
+            <form th:action="@{/settings}" th:object="${company}" method="post">
+                <div class="mb-3">
+                    <label class="form-label" for="name">Business name *</label>
+                    <input type="text" class="form-control" th:field="*{name}" th:errorclass="is-invalid" required>
+                    <div class="invalid-feedback" th:errors="*{name}"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="address">Address</label>
+                    <textarea class="form-control" rows="2" th:field="*{address}" th:errorclass="is-invalid"></textarea>
+                    <div class="invalid-feedback" th:errors="*{address}"></div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="phone">Phone</label>
+                        <input type="text" class="form-control" th:field="*{phone}" th:errorclass="is-invalid">
+                        <div class="invalid-feedback" th:errors="*{phone}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" class="form-control" th:field="*{email}" th:errorclass="is-invalid">
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="gstin">GSTIN</label>
+                        <input type="text" class="form-control text-uppercase" th:field="*{gstin}" th:errorclass="is-invalid"
+                               maxlength="15" placeholder="e.g. 33ABCDE1234F1Z5">
+                        <div class="invalid-feedback" th:errors="*{gstin}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="state">State</label>
+                        <select class="form-select" th:field="*{state}">
+                            <option value="">-- From GSTIN / not set --</option>
+                            <option th:each="s : ${states}" th:value="${s}" th:text="${s}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="alert alert-info small">
+                    <i class="bi bi-info-circle"></i>
+                    Bills to parties in <strong>your state</strong> are charged CGST + SGST; parties in
+                    <strong>other states</strong> are charged IGST. If either state is not set, CGST + SGST is used.
+                </div>
+                <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

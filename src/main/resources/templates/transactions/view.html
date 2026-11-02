@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(${txn.billNumber}, ${section}, ~{::main})}">
+<body>
+<main th:with="party=${isSale ? txn.customer : txn.supplier}">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2 d-print-none">
+        <a th:href="@{|/${section}|}" class="btn btn-link px-0"><i class="bi bi-arrow-left"></i> Back to <span th:text="${title}"></span></a>
+        <div class="d-flex gap-2">
+            <a th:if="${isSale and txn.due.signum() > 0}" class="btn btn-outline-success"
+               th:href="@{/payments/new(type='CUSTOMER_RECEIPT', party=${txn.customer.id})}"><i class="bi bi-cash"></i> Receive payment</a>
+            <a th:if="${!isSale and txn.due.signum() > 0}" class="btn btn-outline-success"
+               th:href="@{/payments/new(type='SUPPLIER_PAYMENT', party=${txn.supplier.id})}"><i class="bi bi-cash"></i> Pay supplier</a>
+            <button type="button" class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 1000px">
+        <div class="card-body p-4">
+            <div class="text-center mb-3">
+                <div class="fw-bold fs-5" th:text="${isSale} ? 'TAX INVOICE' : 'PURCHASE BILL'"></div>
+            </div>
+            <div class="d-flex justify-content-between mb-4 gap-3">
+                <div>
+                    <h2 class="h4 mb-1" th:text="${company.name}">Company</h2>
+                    <div th:if="${company.address}" th:text="${company.address}"></div>
+                    <div th:if="${company.phone}" th:text="|Phone: ${company.phone}|"></div>
+                    <div th:if="${company.gstin}"><strong>GSTIN:</strong> <span th:text="${company.gstin}"></span></div>
+                    <div th:if="${company.state}" th:text="|State: ${company.state}|"></div>
+                </div>
+                <div class="text-end">
+                    <div class="fs-5 fw-semibold" th:text="${txn.billNumber}"></div>
+                    <div th:text="|Date: ${@fmt.date(txn.date)}|"></div>
+                    <div class="small text-muted" th:text="${txn.interState} ? 'Inter-state supply (IGST)' : 'Intra-state supply (CGST + SGST)'"></div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="text-muted small" th:text="${isSale} ? 'Bill to' : 'Supplier'"></div>
+                <div class="fw-semibold" th:text="${party.name}"></div>
+                <div th:if="${party.address}" th:text="${party.address}"></div>
+                <div th:if="${party.phone}" th:text="|Phone: ${party.phone}|"></div>
+                <div th:if="${party.gstin}"><strong>GSTIN:</strong> <span th:text="${party.gstin}"></span></div>
+                <div th:if="${party.state}" th:text="|State: ${party.state}|"></div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead class="table-light">
+                    <tr><th style="width: 40px">#</th><th>Item</th><th>HSN</th><th class="text-end">Qty</th><th class="text-end">Rate</th>
+                        <th class="text-end">Taxable</th><th class="text-end">GST</th><th class="text-end">Tax</th><th class="text-end">Amount</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item, st : ${txn.items}">
+                        <td th:text="${st.count}"></td>
+                        <td th:text="|${item.product.code} - ${item.product.name}|"></td>
+                        <td th:text="${item.hsnCode}"></td>
+                        <td class="text-end text-nowrap" th:text="|${item.quantity} ${item.product.uom?.name ?: ''}|"></td>
+                        <td class="text-end text-nowrap" th:text="${@fmt.money(item.price)}"></td>
+                        <td class="text-end text-nowrap" th:text="${@fmt.money(item.taxableValue)}"></td>
+                        <td class="text-end" th:text="${@fmt.rate(item.gstRate)}"></td>
+                        <td class="text-end text-nowrap" th:text="${@fmt.money(item.taxAmount)}"></td>
+                        <td class="text-end text-nowrap" th:text="${@fmt.money(item.total)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <table class="table table-sm w-auto">
+                    <tr><td class="pe-5">Taxable value</td><td class="text-end" th:text="${@fmt.money(txn.taxableAmount)}"></td></tr>
+                    <th:block th:unless="${txn.interState}">
+                        <tr><td>CGST</td><td class="text-end" th:text="${@fmt.money(txn.cgstAmount)}"></td></tr>
+                        <tr><td>SGST</td><td class="text-end" th:text="${@fmt.money(txn.sgstAmount)}"></td></tr>
+                    </th:block>
+                    <tr th:if="${txn.interState}"><td>IGST</td><td class="text-end" th:text="${@fmt.money(txn.igstAmount)}"></td></tr>
+                    <tr class="fw-bold"><td>Total</td><td class="text-end" th:text="${@fmt.money(txn.subtotal)}"></td></tr>
+                    <tr><td th:text="|Paid (${txn.mode})|">Paid</td><td class="text-end" th:text="${@fmt.money(txn.paid)}"></td></tr>
+                    <tr class="fw-bold"><td>Balance due</td><td class="text-end" th:text="${@fmt.money(txn.due)}"></td></tr>
+                </table>
+            </div>
+
+            <p th:if="${txn.description}" class="mb-1"><span class="text-muted">Notes:</span> <span th:text="${txn.description}"></span></p>
+            <p class="text-muted small mb-0" th:text="|Entered by ${txn.createdBy}|"></p>
+            <div th:if="${isSale}" class="d-flex justify-content-between align-items-end mt-5">
+                <span>Thank you for your business!</span>
+                <span class="text-center">For <strong th:text="${company.name}"></strong><br><br><span class="small text-muted">Authorised signatory</span></span>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

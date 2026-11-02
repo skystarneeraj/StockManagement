@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(${label}, ${section}, ~{::main})}">
+<body>
+<main>
+    <h1 class="h3 mb-3" th:text="${item.id == null} ? |Add ${label}| : |Edit ${label}|">Edit</h1>
+    <div class="card" style="max-width: 600px">
+        <div class="card-body">
+            <form th:action="@{|/${section}|}" th:object="${item}" method="post">
+                <input type="hidden" th:field="*{id}">
+                <div class="mb-3">
+                    <label class="form-label" for="name">Name *</label>
+                    <input type="text" class="form-control" th:field="*{name}" th:errorclass="is-invalid" required autofocus>
+                    <div class="invalid-feedback" th:errors="*{name}"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="description">Description</label>
+                    <textarea class="form-control" rows="3" th:field="*{description}" th:errorclass="is-invalid"></textarea>
+                    <div class="invalid-feedback" th:errors="*{description}"></div>
+                </div>
+                <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
+                <a th:href="@{|/${section}|}" class="btn btn-link">Cancel</a>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

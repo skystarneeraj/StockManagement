@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Dashboard', 'dashboard', ~{::main})}">
+<body>
+<main>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <div class="d-flex gap-2">
+            <a th:href="@{/sales/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Sale</a>
+            <a th:href="@{/purchases/new}" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i> New Purchase</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card h-100"><div class="card-body d-flex justify-content-between">
+                <div><div class="text-muted small">Sales today</div>
+                    <div class="stat-value" th:text="${@fmt.money(salesToday)}">0</div>
+                    <div class="small text-muted">This month: <span th:text="${@fmt.money(salesMonth)}"></span></div></div>
+                <i class="bi bi-receipt stat-icon text-primary"></i>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card h-100"><div class="card-body d-flex justify-content-between">
+                <div><div class="text-muted small">Purchases this month</div>
+                    <div class="stat-value" th:text="${@fmt.money(purchasesMonth)}">0</div></div>
+                <i class="bi bi-truck stat-icon text-secondary"></i>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card h-100"><div class="card-body d-flex justify-content-between">
+                <div><div class="text-muted small">Stock value (<span th:text="${productCount}"></span> products)</div>
+                    <div class="stat-value" th:text="${@fmt.money(stockValue)}">0</div></div>
+                <i class="bi bi-box-seam stat-icon text-success"></i>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card h-100"><div class="card-body d-flex justify-content-between">
+                <div><div class="text-muted small">To receive / To pay</div>
+                    <div class="stat-value text-success" th:text="${@fmt.money(receivable)}">0</div>
+                    <div class="small text-danger" th:text="${@fmt.money(payable)}"></div></div>
+                <i class="bi bi-cash-coin stat-icon text-warning"></i>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-exclamation-triangle text-danger"></i> Low stock</span>
+                    <a th:href="@{/products(low=true)}" class="small">View all</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Product</th><th class="text-end">In stock</th><th class="text-end">Reorder at</th></tr></thead>
+                        <tbody>
+                        <tr th:each="p : ${lowStock}">
+                            <td th:text="|${p.code} - ${p.name}|"></td>
+                            <td class="text-end"><span class="badge text-bg-danger" th:text="${p.quantity}"></span></td>
+                            <td class="text-end" th:text="${p.reorderLevel}"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(lowStock)}"><td colspan="3" class="text-muted text-center py-3">All products are sufficiently stocked.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-history"></i> Recent sales</span>
+                    <a th:href="@{/sales}" class="small">View all</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Invoice</th><th>Customer</th><th class="text-end">Total</th></tr></thead>
+                        <tbody>
+                        <tr th:each="s : ${recentSales}">
+                            <td><a th:href="@{/sales/{id}(id=${s.id})}" th:text="${s.billNumber}"></a></td>
+                            <td th:text="${s.customer.name}"></td>
+                            <td class="text-end" th:text="${@fmt.money(s.subtotal)}"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(recentSales)}"><td colspan="3" class="text-muted text-center py-3">No sales yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
