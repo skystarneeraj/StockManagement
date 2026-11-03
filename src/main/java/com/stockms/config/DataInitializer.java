@@ -4,6 +4,7 @@ import com.stockms.entity.*;
 import com.stockms.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -28,12 +29,14 @@ public class DataInitializer implements CommandLineRunner {
     private final PurchaseRepository purchaseRepository;
     private final CompanySettingsRepository settingsRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String adminPassword;
 
     public DataInitializer(AppUserRepository userRepository, CategoryRepository categoryRepository,
                            UomRepository uomRepository, SupplierRepository supplierRepository,
                            CustomerRepository customerRepository, ProductRepository productRepository,
                            SaleRepository saleRepository, PurchaseRepository purchaseRepository,
-                           CompanySettingsRepository settingsRepository, PasswordEncoder passwordEncoder) {
+                           CompanySettingsRepository settingsRepository, PasswordEncoder passwordEncoder,
+                           @Value("${app.admin-password:admin}") String adminPassword) {
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.uomRepository = uomRepository;
@@ -44,14 +47,15 @@ public class DataInitializer implements CommandLineRunner {
         this.purchaseRepository = purchaseRepository;
         this.settingsRepository = settingsRepository;
         this.passwordEncoder = passwordEncoder;
+        this.adminPassword = adminPassword;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
         if (userRepository.count() == 0) {
-            userRepository.save(new AppUser("admin", passwordEncoder.encode("admin"), AppUser.Role.ADMIN));
-            log.warn("Created default login admin/admin - change it under Users after signing in.");
+            userRepository.save(new AppUser("admin", passwordEncoder.encode(adminPassword), AppUser.Role.ADMIN));
+            log.warn("Created default admin login - change its password under Users after signing in.");
         }
         if (!settingsRepository.existsById(CompanySettings.ID)) {
             settingsRepository.save(new CompanySettings());

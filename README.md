@@ -69,6 +69,28 @@ mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
 
 Tables are created automatically on startup (`spring.jpa.hibernate.ddl-auto=update`).
 
+## Deploying to Railway
+
+The `Dockerfile` builds the app and starts it with the `prod` profile, which uses MySQL and turns off
+the H2 console.
+
+1. In Railway, create a project from this GitHub repo, then add a **MySQL** database to the project.
+2. On the app service, set these variables (`MySQL` is the name of the database service):
+
+   | Variable | Value |
+   |---|---|
+   | `MYSQLHOST` | `${{MySQL.MYSQLHOST}}` |
+   | `MYSQLPORT` | `${{MySQL.MYSQLPORT}}` |
+   | `MYSQLDATABASE` | `${{MySQL.MYSQLDATABASE}}` |
+   | `MYSQLUSER` | `${{MySQL.MYSQLUSER}}` |
+   | `MYSQLPASSWORD` | `${{MySQL.MYSQLPASSWORD}}` |
+   | `ADMIN_PASSWORD` | A long, random password for the `admin` login |
+
+3. Under **Settings > Networking**, generate a public domain for the app service.
+
+`ADMIN_PASSWORD` only sets the password when the `admin` user is first created. To change it later,
+use the **Users** page. The app will not start under the `prod` profile if this variable is missing.
+
 ## H2 console
 
 While running on H2, admins can browse the database at http://localhost:8080/h2-console
@@ -92,5 +114,6 @@ src/main/resources
 
 | Property | Default | Meaning |
 |---|---|---|
-| `server.port` | `8080` | HTTP port |
+| `server.port` | `PORT` variable, or `8080` | HTTP port |
+| `app.admin-password` | `admin` | Password for the first `admin` user (required under the `prod` profile) |
 | `app.currency-symbol` | `₹` | Currency shown on screens and invoices |

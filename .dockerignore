@@ -1,0 +1,12 @@
+.git
+.idea
+.vscode
+.mvn
+data
+target
+mvnw
+mvnw.cmd
+run.bat
+*.md
+Dockerfile
+.dockerignore
