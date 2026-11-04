@@ -3,6 +3,7 @@
 .vscode
 .mvn
 data
+.env
 target
 mvnw
 mvnw.cmd

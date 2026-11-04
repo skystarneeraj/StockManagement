@@ -19,7 +19,6 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/login", "/error").permitAll()
-                        .requestMatchers("/h2-console/**").hasRole("ADMIN")
                         .requestMatchers("/users/**", "/settings/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
@@ -28,10 +27,7 @@ public class SecurityConfig {
                         .permitAll())
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
-                        .permitAll())
-                // The H2 console posts its own forms and renders inside frames.
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
-                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+                        .permitAll());
         return http.build();
     }
 

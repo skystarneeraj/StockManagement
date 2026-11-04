@@ -18,7 +18,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** Renders every screen so template mistakes fail the build. */
-@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:stocktest;DB_CLOSE_DELAY=-1")
+@SpringBootTest(properties = {"spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/stockdb_test",
+        "spring.jpa.hibernate.ddl-auto=create-drop"})
 @AutoConfigureMockMvc
 class WebPagesTests {
 

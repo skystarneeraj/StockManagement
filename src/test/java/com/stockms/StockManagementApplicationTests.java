@@ -19,7 +19,8 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:stocktest;DB_CLOSE_DELAY=-1")
+@SpringBootTest(properties = {"spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/stockdb_test",
+        "spring.jpa.hibernate.ddl-auto=create-drop"})
 @Transactional
 class StockManagementApplicationTests {
 

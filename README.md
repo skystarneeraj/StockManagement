@@ -23,8 +23,27 @@ A web-based stock / inventory management system built with **Spring Boot 4**, **
 ## Requirements
 
 - JDK 17 or newer (JDK 21 recommended)
-- Nothing else. Maven is downloaded automatically by the included wrapper (`mvnw`), and the database
-  is an embedded H2 file stored in `./data`.
+- PostgreSQL 15 or newer
+- Maven is downloaded automatically by the included wrapper (`mvnw`).
+
+## Database setup
+
+The app uses its own `stockapp` login and `stockdb` database. The tests use a separate `stockdb_test`
+database, which they wipe on every run. Create them once, using your PostgreSQL admin login:
+
+```sql
+CREATE ROLE stockapp LOGIN PASSWORD 'choose-a-password';
+CREATE DATABASE stockdb OWNER stockapp ENCODING 'UTF8' TEMPLATE template0;
+CREATE DATABASE stockdb_test OWNER stockapp ENCODING 'UTF8' TEMPLATE template0;
+```
+
+Then create a file named `.env` in this folder (git ignores it):
+
+```
+DB_PASSWORD=choose-a-password
+```
+
+Tables are created automatically on startup (`spring.jpa.hibernate.ddl-auto=update`).
 
 ## Run
 
@@ -57,44 +76,27 @@ java -jar target/stock-management-0.0.1-SNAPSHOT.jar
 mvnw test
 ```
 
-## Using MySQL instead of H2
-
-1. Create a MySQL user, or use `root`. The `stockdb` database is created automatically.
-2. Edit `src/main/resources/application-mysql.properties` with your username and password.
-3. Run with the `mysql` profile:
-
-```
-mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
-```
-
-Tables are created automatically on startup (`spring.jpa.hibernate.ddl-auto=update`).
-
 ## Deploying to Railway
 
-The `Dockerfile` builds the app and starts it with the `prod` profile, which uses MySQL and turns off
-the H2 console.
+The `Dockerfile` builds the app and starts it with the `prod` profile, which reads its PostgreSQL
+connection from environment variables.
 
-1. In Railway, create a project from this GitHub repo, then add a **MySQL** database to the project.
-2. On the app service, set these variables (`MySQL` is the name of the database service):
+1. In Railway, create a project from this GitHub repo, then add a **PostgreSQL** database to the project.
+2. On the app service, set these variables (`Postgres` is the name of the database service):
 
    | Variable | Value |
    |---|---|
-   | `MYSQLHOST` | `${{MySQL.MYSQLHOST}}` |
-   | `MYSQLPORT` | `${{MySQL.MYSQLPORT}}` |
-   | `MYSQLDATABASE` | `${{MySQL.MYSQLDATABASE}}` |
-   | `MYSQLUSER` | `${{MySQL.MYSQLUSER}}` |
-   | `MYSQLPASSWORD` | `${{MySQL.MYSQLPASSWORD}}` |
+   | `PGHOST` | `${{Postgres.PGHOST}}` |
+   | `PGPORT` | `${{Postgres.PGPORT}}` |
+   | `PGDATABASE` | `${{Postgres.PGDATABASE}}` |
+   | `PGUSER` | `${{Postgres.PGUSER}}` |
+   | `PGPASSWORD` | `${{Postgres.PGPASSWORD}}` |
    | `ADMIN_PASSWORD` | A long, random password for the `admin` login |
 
 3. Under **Settings > Networking**, generate a public domain for the app service.
 
 `ADMIN_PASSWORD` only sets the password when the `admin` user is first created. To change it later,
 use the **Users** page. The app will not start under the `prod` profile if this variable is missing.
-
-## H2 console
-
-While running on H2, admins can browse the database at http://localhost:8080/h2-console
-with JDBC URL `jdbc:h2:file:./data/stockdb;AUTO_SERVER=TRUE`, user `sa` and an empty password.
 
 ## Project structure
 
@@ -115,5 +117,7 @@ src/main/resources
 | Property | Default | Meaning |
 |---|---|---|
 | `server.port` | `PORT` variable, or `8080` | HTTP port |
+| `DB_HOST`, `DB_PORT`, `DB_NAME` | `localhost`, `5432`, `stockdb` | PostgreSQL location (not used under the `prod` profile) |
+| `DB_USERNAME`, `DB_PASSWORD` | `stockapp`, none | PostgreSQL login; `DB_PASSWORD` is required (not used under the `prod` profile) |
 | `app.admin-password` | `admin` | Password for the first `admin` user (required under the `prod` profile) |
 | `app.currency-symbol` | `₹` | Currency shown on screens and invoices |
