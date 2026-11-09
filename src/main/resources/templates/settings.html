@@ -6,7 +6,23 @@
     <p class="text-muted">Your business details, printed on every tax invoice.</p>
     <div class="card" style="max-width: 750px">
         <div class="card-body">
-            <form th:action="@{/settings}" th:object="${company}" method="post">
+            <form th:action="@{/settings}" th:object="${company}" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label" for="logoFile">Logo</label>
+                    <div class="d-flex align-items-center gap-3 mb-2" th:if="${company.hasLogo()}">
+                        <img th:src="@{/company-logo}" alt="Current logo" class="company-logo border rounded p-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="removeLogo" name="removeLogo" value="true">
+                            <label class="form-check-label" for="removeLogo">Remove logo</label>
+                        </div>
+                    </div>
+                    <input type="file" class="form-control" id="logoFile" name="logoFile"
+                           accept="image/png,image/jpeg,image/gif,image/webp"
+                           th:classappend="${#fields.hasErrors('logo')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:errors="*{logo}"></div>
+                    <div class="form-text">Optional. PNG, JPEG, GIF or WebP, up to 500 KB. Printed on invoices.
+                        <span th:if="${company.hasLogo()}">Choose a file only to replace the current logo.</span></div>
+                </div>
                 <div class="mb-3">
                     <label class="form-label" for="name">Business name *</label>
                     <input type="text" class="form-control" th:field="*{name}" th:errorclass="is-invalid" required>

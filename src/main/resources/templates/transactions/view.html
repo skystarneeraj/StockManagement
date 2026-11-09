@@ -19,12 +19,15 @@
                 <div class="fw-bold fs-5" th:text="${isSale} ? 'TAX INVOICE' : 'PURCHASE BILL'"></div>
             </div>
             <div class="d-flex justify-content-between mb-4 gap-3">
+                <div class="d-flex align-items-start gap-3">
+                <img th:if="${company.hasLogo()}" th:src="@{/company-logo}" alt="" class="company-logo">
                 <div>
                     <h2 class="h4 mb-1" th:text="${company.name}">Company</h2>
                     <div th:if="${company.address}" th:text="${company.address}"></div>
                     <div th:if="${company.phone}" th:text="|Phone: ${company.phone}|"></div>
                     <div th:if="${company.gstin}"><strong>GSTIN:</strong> <span th:text="${company.gstin}"></span></div>
                     <div th:if="${company.state}" th:text="|State: ${company.state}|"></div>
+                </div>
                 </div>
                 <div class="text-end">
                     <div class="fs-5 fw-semibold" th:text="${txn.billNumber}"></div>

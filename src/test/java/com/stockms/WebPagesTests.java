@@ -8,12 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -92,6 +94,34 @@ class WebPagesTests {
     @Test
     void staffCannotChangeCompanySettings() throws Exception {
         mvc.perform(get("/settings").with(user("clerk").roles("STAFF"))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void logoCanBeUploadedKeptAndRemoved() throws Exception {
+        byte[] png = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0};
+
+        mvc.perform(multipart("/settings").file(new MockMultipartFile("logoFile", "logo.txt", "image/png", "not an image".getBytes()))
+                        .with(csrf()).param("name", "Logo Co"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Logo must be a PNG, JPEG, GIF or WebP image.")));
+
+        mvc.perform(multipart("/settings").file(new MockMultipartFile("logoFile", "logo.png", "image/png", png))
+                        .with(csrf()).param("name", "Logo Co"))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get("/company-logo").with(user("clerk").roles("STAFF")))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("image/png"))
+                .andExpect(content().bytes(png));
+
+        // Saving other details without a new file keeps the logo.
+        mvc.perform(multipart("/settings").with(csrf()).param("name", "Logo Co Renamed"))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get("/company-logo")).andExpect(status().isOk());
+
+        mvc.perform(multipart("/settings").with(csrf()).param("name", "Logo Co").param("removeLogo", "true"))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get("/company-logo")).andExpect(status().isNotFound());
     }
 
     @Test

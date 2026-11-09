@@ -66,6 +66,12 @@ body {
     min-width: 90px;
 }
 
+.company-logo {
+    max-height: 80px;
+    max-width: 160px;
+    object-fit: contain;
+}
+
 @media print {
     body {
         background: #fff;

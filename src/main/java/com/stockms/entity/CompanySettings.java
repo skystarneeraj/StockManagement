@@ -41,6 +41,13 @@ public class CompanySettings {
     @Column(length = 50)
     private String state;
 
+    /** Optional logo printed on invoices. Kept in the database so it survives redeploys. */
+    private byte[] logo;
+
+    /** Media type of the logo, e.g. image/png. */
+    @Column(length = 20)
+    private String logoType;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
@@ -55,4 +62,9 @@ public class CompanySettings {
     public void setGstin(String gstin) { this.gstin = gstin == null ? null : gstin.trim().toUpperCase(); }
     public String getState() { return state; }
     public void setState(String state) { this.state = state; }
+    public byte[] getLogo() { return logo; }
+    public void setLogo(byte[] logo) { this.logo = logo; }
+    public String getLogoType() { return logoType; }
+    public void setLogoType(String logoType) { this.logoType = logoType; }
+    public boolean hasLogo() { return logo != null && logo.length > 0; }
 }
