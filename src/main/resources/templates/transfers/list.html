@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Stock Transfers', 'transfers', ~{::main})}">
+<body>
+<main>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Stock Transfers</h1>
+        <a th:href="@{/transfers/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Transfer</a>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Transfer No</th><th>Date</th><th>From</th><th>To</th><th class="text-end">Items</th>
+                    <th class="text-end">Units</th><th>Status</th><th>By</th></tr></thead>
+                <tbody>
+                <tr th:each="t : ${transfers}">
+                    <td><a th:href="@{/transfers/{id}(id=${t.id})}" th:text="${t.transferNumber}"></a></td>
+                    <td th:text="${@fmt.date(t.date)}"></td>
+                    <td th:text="${t.fromBranch.name}"></td>
+                    <td th:text="${t.toBranch.name}"></td>
+                    <td class="text-end" th:text="${#lists.size(t.items)}"></td>
+                    <td class="text-end" th:text="${t.totalQuantity}"></td>
+                    <td><span class="badge" th:text="${t.status.label}"
+                              th:classappend="${t.status.name() == 'RECEIVED'} ? 'text-bg-success' : (${t.status.name() == 'IN_TRANSIT'} ? 'text-bg-warning' : 'text-bg-secondary')"></span></td>
+                    <td class="text-muted" th:text="${t.createdBy}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(transfers)}"><td colspan="8" class="text-center text-muted py-4">No transfers yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

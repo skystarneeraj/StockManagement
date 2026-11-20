@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.InitBinder;
 /**
  * Trims form text and turns empty fields into null, so optional fields with a
  * format (GSTIN, HSN code) are simply left out instead of failing validation.
+ * Ownership fields are never bound: the server decides the company and branch of a record.
  */
 @ControllerAdvice
 public class FormBindingAdvice {
@@ -15,5 +16,6 @@ public class FormBindingAdvice {
     @InitBinder
     void trimStrings(WebDataBinder binder) {
         binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
+        binder.setDisallowedFields("companyId", "company", "company.*", "branch", "branch.*");
     }
 }

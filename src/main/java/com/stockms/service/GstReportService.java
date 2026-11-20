@@ -36,10 +36,18 @@ public class GstReportService {
     public record HsnRow(String hsn, BigDecimal rate, int quantity, BigDecimal taxable, BigDecimal tax) {
     }
 
+    /** Output and input GST of one branch, filed under that branch's (or the company's) GSTIN. */
+    public record BranchRow(Branch branch, BigDecimal salesTaxable, BigDecimal outputTax,
+                            BigDecimal purchasesTaxable, BigDecimal inputTax) {
+        public BigDecimal netPayable() {
+            return outputTax.subtract(inputTax);
+        }
+    }
+
     public record Report(LocalDate from, LocalDate to,
                          List<BillTax> sales, BillTax salesTotal,
                          List<BillTax> purchases, BillTax purchasesTotal,
-                         List<HsnRow> hsnSummary) {
+                         List<HsnRow> hsnSummary, List<BranchRow> branches) {
         /** Output GST minus input tax credit; negative means credit carried forward. */
         public BigDecimal netPayable() {
             return salesTotal.tax().subtract(purchasesTotal.tax());
@@ -54,9 +62,9 @@ public class GstReportService {
         this.purchaseRepository = purchaseRepository;
     }
 
-    public Report report(LocalDate from, LocalDate to) {
-        List<Sale> sales = saleRepository.findByDateBetweenOrderByDateAscIdAsc(from, to);
-        List<Purchase> purchases = purchaseRepository.findByDateBetweenOrderByDateAscIdAsc(from, to);
+    public Report report(Collection<Long> branchIds, LocalDate from, LocalDate to) {
+        List<Sale> sales = saleRepository.findByBranchIdInAndDateBetweenOrderByDateAscIdAsc(branchIds, from, to);
+        List<Purchase> purchases = purchaseRepository.findByBranchIdInAndDateBetweenOrderByDateAscIdAsc(branchIds, from, to);
 
         List<BillTax> saleRows = sales.stream().map(s -> new BillTax(s.getId(), s.getBillNumber(), s.getDate(),
                 s.getPartyName(), s.getCustomer().getGstin(), s.getTaxableAmount(), s.getCgstAmount(),
@@ -66,7 +74,26 @@ public class GstReportService {
                 p.getSgstAmount(), p.getIgstAmount(), p.getSubtotal())).toList();
 
         return new Report(from, to, saleRows, BillTax.total(saleRows), purchaseRows, BillTax.total(purchaseRows),
-                hsnSummary(sales.stream().flatMap(s -> s.getItems().stream())));
+                hsnSummary(sales.stream().flatMap(s -> s.getItems().stream())), branchSummary(sales, purchases));
+    }
+
+    private static List<BranchRow> branchSummary(List<Sale> sales, List<Purchase> purchases) {
+        Map<Long, BranchRow> rows = new LinkedHashMap<>();
+        BigDecimal zero = BigDecimal.ZERO;
+        for (Sale s : sales) {
+            rows.merge(s.getBranch().getId(), new BranchRow(s.getBranch(), s.getTaxableAmount(), s.getTaxAmount(), zero, zero),
+                    GstReportService::add);
+        }
+        for (Purchase p : purchases) {
+            rows.merge(p.getBranch().getId(), new BranchRow(p.getBranch(), zero, zero, p.getTaxableAmount(), p.getTaxAmount()),
+                    GstReportService::add);
+        }
+        return rows.values().stream().sorted(Comparator.comparing(r -> r.branch().getName())).toList();
+    }
+
+    private static BranchRow add(BranchRow a, BranchRow b) {
+        return new BranchRow(a.branch(), a.salesTaxable().add(b.salesTaxable()), a.outputTax().add(b.outputTax()),
+                a.purchasesTaxable().add(b.purchasesTaxable()), a.inputTax().add(b.inputTax()));
     }
 
     /** Sales grouped by HSN code and rate, as needed for GSTR-1. */

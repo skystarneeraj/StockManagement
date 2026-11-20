@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Company Settings', 'settings', ~{::main})}">
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Company Profile', 'settings', ~{::main})}">
 <body>
 <main>
-    <h1 class="h3 mb-1">Company Settings</h1>
-    <p class="text-muted">Your business details, printed on every tax invoice.</p>
+    <h1 class="h3 mb-1">Company Profile</h1>
+    <p class="text-muted">Your business details, printed on every tax invoice. Branch addresses and GSTINs are set under
+        <a th:href="@{/branches}">Branches</a>.</p>
     <div class="card" style="max-width: 750px">
         <div class="card-body">
             <form th:action="@{/settings}" th:object="${company}" method="post" enctype="multipart/form-data">
@@ -23,10 +24,19 @@
                     <div class="form-text">Optional. PNG, JPEG, GIF or WebP, up to 500 KB. Printed on invoices.
                         <span th:if="${company.hasLogo()}">Choose a file only to replace the current logo.</span></div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label" for="name">Business name *</label>
-                    <input type="text" class="form-control" th:field="*{name}" th:errorclass="is-invalid" required>
-                    <div class="invalid-feedback" th:errors="*{name}"></div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label" for="name">Business name *</label>
+                        <input type="text" class="form-control" th:field="*{name}" th:errorclass="is-invalid" required>
+                        <div class="invalid-feedback" th:errors="*{name}"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="code">Short code *</label>
+                        <input type="text" class="form-control text-uppercase" th:field="*{code}" th:errorclass="is-invalid"
+                               maxlength="10" required>
+                        <div class="invalid-feedback" th:errors="*{code}"></div>
+                        <div class="form-text">Starts invoice numbers, e.g. <span class="font-monospace">KT</span>-DEL-2026-27/0001.</div>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="address">Address</label>
@@ -58,10 +68,15 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" th:field="*{allowNegativeStock}">
+                    <label class="form-check-label" th:for="${#ids.prev('allowNegativeStock')}">Allow negative stock</label>
+                    <div class="form-text">When off, a sale or transfer cannot take more than a branch has in stock.</div>
+                </div>
                 <div class="alert alert-info small">
                     <i class="bi bi-info-circle"></i>
-                    Bills to parties in <strong>your state</strong> are charged CGST + SGST; parties in
-                    <strong>other states</strong> are charged IGST. If either state is not set, CGST + SGST is used.
+                    GST is decided per branch: bills to parties in <strong>the branch's state</strong> are charged CGST + SGST;
+                    parties in <strong>other states</strong> are charged IGST. If either state is not set, CGST + SGST is used.
                 </div>
                 <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
             </form>

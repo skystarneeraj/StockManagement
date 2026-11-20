@@ -11,13 +11,14 @@ import java.util.List;
 /** A stock purchase (goods received) from a supplier. */
 @Entity
 @Table(name = "purchases")
-public class Purchase {
+public class Purchase extends BranchOwned {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, length = 20)
+    /** Numbered per branch and financial year, e.g. KT-DEL-2026-27/0001. */
+    @Column(length = 40)
     private String billNumber;
 
     @ManyToOne(optional = false)

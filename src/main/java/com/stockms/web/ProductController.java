@@ -1,11 +1,16 @@
 package com.stockms.web;
 
+import com.stockms.entity.Branch;
 import com.stockms.entity.Product;
+import com.stockms.repository.BranchRepository;
 import com.stockms.repository.CategoryRepository;
 import com.stockms.repository.ProductRepository;
 import com.stockms.repository.SupplierRepository;
 import com.stockms.repository.UomRepository;
 import com.stockms.service.Gst;
+import com.stockms.service.StockService;
+import com.stockms.tenant.Tenant;
+import com.stockms.tenant.TenantContext;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
@@ -13,6 +18,8 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/products")
@@ -22,26 +29,28 @@ public class ProductController {
     private final CategoryRepository categoryRepository;
     private final UomRepository uomRepository;
     private final SupplierRepository supplierRepository;
+    private final BranchRepository branchRepository;
+    private final StockService stockService;
 
     public ProductController(ProductRepository productRepository, CategoryRepository categoryRepository,
-                             UomRepository uomRepository, SupplierRepository supplierRepository) {
+                             UomRepository uomRepository, SupplierRepository supplierRepository,
+                             BranchRepository branchRepository, StockService stockService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.uomRepository = uomRepository;
         this.supplierRepository = supplierRepository;
+        this.branchRepository = branchRepository;
+        this.stockService = stockService;
     }
 
     @GetMapping
     String list(@RequestParam(required = false) String q,
                 @RequestParam(defaultValue = "false") boolean low,
                 Model model) {
-        if (low) {
-            model.addAttribute("products", productRepository.findLowStock());
-        } else if (q != null && !q.isBlank()) {
-            model.addAttribute("products", productRepository.search(q.trim()));
-        } else {
-            model.addAttribute("products", productRepository.findAllByOrderByNameAsc());
-        }
+        // Stock shown is for the branch selected in the top bar (or all branches).
+        List<Product> products = stockService.fillQuantities(q != null && !q.isBlank()
+                ? productRepository.search(q.trim()) : productRepository.findAllByOrderByNameAsc());
+        model.addAttribute("products", low ? products.stream().filter(Product::isLowStock).toList() : products);
         model.addAttribute("q", q);
         model.addAttribute("low", low);
         return "products/list";
@@ -55,7 +64,9 @@ public class ProductController {
 
     @GetMapping("/{id}/edit")
     String edit(@PathVariable Long id, Model model) {
-        model.addAttribute("product", productRepository.findById(id).orElseThrow(NotFoundException::new));
+        Product product = productRepository.findById(id).orElseThrow(NotFoundException::new);
+        stockService.fillQuantities(List.of(product));
+        model.addAttribute("product", product);
         return form(model);
     }
 
@@ -67,16 +78,15 @@ public class ProductController {
                     .filter(existing -> !existing.getId().equals(product.getId()))
                     .ifPresent(existing -> result.rejectValue("code", "duplicate", "is already used by " + existing.getName()));
         }
+        Tenant tenant = TenantContext.require();
+        if (product.getId() == null && product.getQuantity() > 0 && tenant.branchId() == null) {
+            result.rejectValue("quantity", "branch", "Choose a branch in the top bar to add opening stock.");
+        }
         if (result.hasErrors()) return form(model);
 
-        Product target;
-        if (product.getId() == null) {
-            target = new Product();
-            target.setQuantity(product.getQuantity()); // opening stock
-        } else {
-            // Stock on hand changes only through purchases and sales.
-            target = productRepository.findById(product.getId()).orElseThrow(NotFoundException::new);
-        }
+        // Stock on hand changes only through purchases, sales and transfers after creation.
+        Product target = product.getId() == null ? new Product()
+                : productRepository.findById(product.getId()).orElseThrow(NotFoundException::new);
         target.setCode(product.getCode().trim());
         target.setName(product.getName().trim());
         target.setCategory(product.getCategory());
@@ -89,6 +99,10 @@ public class ProductController {
         target.setHsnCode(product.getHsnCode());
         target.setGstRate(product.getGstRate());
         productRepository.save(target);
+        if (product.getId() == null && product.getQuantity() > 0) {
+            Branch branch = branchRepository.findById(tenant.branchId()).orElseThrow(NotFoundException::new);
+            stockService.add(branch, target, product.getQuantity());
+        }
 
         redirect.addFlashAttribute("success", "Product '" + target.getName() + "' saved.");
         return "redirect:/products";

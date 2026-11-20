@@ -11,13 +11,14 @@ import java.util.List;
 /** A sale (invoice) to a customer. */
 @Entity
 @Table(name = "sales")
-public class Sale {
+public class Sale extends BranchOwned {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, length = 20)
+    /** Numbered per branch and financial year, e.g. KT-DEL-2026-27/0001. */
+    @Column(length = 40)
     private String billNumber;
 
     @ManyToOne(optional = false)

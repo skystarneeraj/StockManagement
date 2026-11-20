@@ -16,8 +16,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "products")
-public class Product {
+@Table(name = "products", uniqueConstraints = @UniqueConstraint(columnNames = {"company_id", "code"}))
+public class Product extends CompanyOwned {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +25,7 @@ public class Product {
 
     @NotBlank
     @Size(max = 50)
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = 50)
     private String code;
 
     @NotBlank
@@ -52,7 +52,11 @@ public class Product {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal sellingPrice = BigDecimal.ZERO;
 
-    /** Quantity currently in stock. Changed only by purchases and sales after creation. */
+    /**
+     * Stock in the branch (or branches) being viewed, filled in by StockService; stored per branch
+     * in BranchStock. On a new product's form it is the opening stock of the current branch.
+     */
+    @Transient
     @Min(0)
     private int quantity;
 

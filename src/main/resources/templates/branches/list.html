@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Branches', 'branches', ~{::main})}">
+<body>
+<main>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Branches</h1>
+        <a th:href="@{/branches/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Branch</a>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Code</th><th>Name</th><th>State</th><th>GSTIN</th><th>Phone</th><th>Status</th>
+                    <th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                <tr th:each="b : ${branches}" th:classappend="${!b.active} ? 'text-muted'">
+                    <td class="font-monospace" th:text="${b.code}"></td>
+                    <td class="fw-medium"><span th:text="${b.name}"></span>
+                        <span th:if="${b.headOffice}" class="badge text-bg-dark ms-1">Head office</span></td>
+                    <td th:text="${b.state}"></td>
+                    <td class="font-monospace small" th:text="${b.gstin} ?: 'Company GSTIN'"></td>
+                    <td th:text="${b.phone}"></td>
+                    <td><span class="badge" th:classappend="${b.active} ? 'text-bg-success' : 'text-bg-secondary'"
+                              th:text="${b.active} ? 'Active' : 'Inactive'"></span></td>
+                    <td class="text-end text-nowrap">
+                        <a th:href="@{/branches/{id}/edit(id=${b.id})}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <form th:unless="${b.headOffice}" th:action="@{/branches/{id}/active(id=${b.id})}" method="post" class="d-inline">
+                            <input type="hidden" name="active" th:value="${!b.active}">
+                            <button class="btn btn-sm" th:classappend="${b.active} ? 'btn-outline-danger' : 'btn-outline-success'"
+                                    th:title="${b.active} ? 'Deactivate' : 'Activate'">
+                                <i class="bi" th:classappend="${b.active} ? 'bi-pause-circle' : 'bi-play-circle'"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p class="form-text mt-2">A deactivated branch keeps its history and stock but cannot be selected for new bills.</p>
+</main>
+</body>
+</html>

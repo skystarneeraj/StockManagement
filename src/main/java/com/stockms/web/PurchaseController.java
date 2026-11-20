@@ -5,9 +5,11 @@ import com.stockms.repository.ProductRepository;
 import com.stockms.repository.PurchaseRepository;
 import com.stockms.repository.SupplierRepository;
 import com.stockms.service.BusinessException;
+import com.stockms.service.CompanyService;
 import com.stockms.service.InventoryService;
-import com.stockms.service.SettingsService;
+import com.stockms.service.StockService;
 import com.stockms.service.TransactionForm;
+import com.stockms.tenant.TenantContext;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -23,16 +25,18 @@ public class PurchaseController {
     private final SupplierRepository supplierRepository;
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
-    private final SettingsService settingsService;
+    private final CompanyService companyService;
+    private final StockService stockService;
 
     public PurchaseController(PurchaseRepository purchaseRepository, SupplierRepository supplierRepository,
                               ProductRepository productRepository, InventoryService inventoryService,
-                              SettingsService settingsService) {
+                              CompanyService companyService, StockService stockService) {
         this.purchaseRepository = purchaseRepository;
         this.supplierRepository = supplierRepository;
         this.productRepository = productRepository;
         this.inventoryService = inventoryService;
-        this.settingsService = settingsService;
+        this.companyService = companyService;
+        this.stockService = stockService;
     }
 
     @ModelAttribute
@@ -45,7 +49,7 @@ public class PurchaseController {
 
     @GetMapping
     String list(Model model) {
-        model.addAttribute("txns", purchaseRepository.findAllByOrderByDateDescIdDesc());
+        model.addAttribute("txns", purchaseRepository.findByBranchIdInOrderByDateDescIdDesc(TenantContext.require().scopeForQuery()));
         return "transactions/list";
     }
 
@@ -73,8 +77,9 @@ public class PurchaseController {
 
     @GetMapping("/{id}")
     String view(@PathVariable Long id, Model model) {
-        model.addAttribute("company", settingsService.get());
+        // Not found unless it is a bill of this company in a branch the user may access.
         model.addAttribute("txn", purchaseRepository.findById(id).orElseThrow(NotFoundException::new));
+        model.addAttribute("company", companyService.current());
         return "transactions/view";
     }
 
@@ -91,7 +96,7 @@ public class PurchaseController {
 
     private String form(Model model) {
         model.addAttribute("parties", supplierRepository.findAllByOrderByNameAsc());
-        model.addAttribute("products", productRepository.findAllByOrderByNameAsc());
+        model.addAttribute("products", stockService.fillQuantities(productRepository.findAllByOrderByNameAsc()));
         return "transactions/form";
     }
 }

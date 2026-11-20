@@ -19,7 +19,7 @@
             <table class="table table-hover mb-0">
                 <thead>
                 <tr><th>Code</th><th>Name</th><th>Category</th><th>HSN</th><th class="text-end">GST</th>
-                    <th class="text-end">Cost</th><th class="text-end">Price</th><th class="text-end">Stock</th>
+                    <th class="text-end">Cost</th><th class="text-end">Price</th><th class="text-end" th:text="${currentBranch == null} ? 'Stock (all branches)' : 'Stock here'">Stock</th>
                     <th>Expiry</th><th class="text-end">Actions</th></tr>
                 </thead>
                 <tbody>

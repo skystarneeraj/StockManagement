@@ -74,7 +74,7 @@
                         <div class="invalid-feedback" th:errors="*{sellingPrice}"></div>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label" for="quantity" th:text="${product.id == null} ? 'Opening stock' : 'In stock'">Stock</label>
+                        <label class="form-label" for="quantity" th:text="${product.id == null} ? 'Opening stock' : (${currentBranch == null} ? 'In stock (all)' : 'In stock here')">Stock</label>
                         <input type="number" min="0" class="form-control" th:field="*{quantity}" th:errorclass="is-invalid"
                                th:readonly="${product.id != null}">
                         <div class="invalid-feedback" th:errors="*{quantity}"></div>
@@ -89,7 +89,9 @@
                         <input type="date" class="form-control" th:field="*{expiryDate}" th:errorclass="is-invalid">
                     </div>
                 </div>
-                <p class="form-text" th:if="${product.id != null}">Stock changes through purchases and sales.</p>
+                <p class="form-text" th:if="${product.id != null}">Stock changes through purchases, sales and stock transfers.</p>
+                <p class="form-text" th:if="${product.id == null and currentBranch != null}">
+                    Opening stock is added to <strong th:text="${currentBranch.name}"></strong>; other branches start at 0.</p>
                 <div class="mt-3">
                     <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
                     <a th:href="@{/products}" class="btn btn-link">Cancel</a>

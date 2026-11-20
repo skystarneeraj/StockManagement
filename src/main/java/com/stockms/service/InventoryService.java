@@ -2,6 +2,8 @@ package com.stockms.service;
 
 import com.stockms.entity.*;
 import com.stockms.repository.*;
+import com.stockms.service.DocNumberService.DocType;
+import com.stockms.tenant.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,8 +13,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Records purchases, sales and payments, keeping product quantities and
- * supplier/customer balances consistent with them.
+ * Records purchases, sales and payments in the current branch, keeping that branch's stock
+ * and the supplier/customer balances consistent with them.
  */
 @Service
 @Transactional
@@ -24,7 +26,10 @@ public class InventoryService {
     private final PurchaseRepository purchaseRepository;
     private final SaleRepository saleRepository;
     private final PaymentRepository paymentRepository;
-    private final SettingsService settingsService;
+    private final BranchRepository branchRepository;
+    private final CompanyService companyService;
+    private final StockService stockService;
+    private final DocNumberService docNumberService;
 
     public InventoryService(ProductRepository productRepository,
                             SupplierRepository supplierRepository,
@@ -32,14 +37,20 @@ public class InventoryService {
                             PurchaseRepository purchaseRepository,
                             SaleRepository saleRepository,
                             PaymentRepository paymentRepository,
-                            SettingsService settingsService) {
+                            BranchRepository branchRepository,
+                            CompanyService companyService,
+                            StockService stockService,
+                            DocNumberService docNumberService) {
         this.productRepository = productRepository;
         this.supplierRepository = supplierRepository;
         this.customerRepository = customerRepository;
         this.purchaseRepository = purchaseRepository;
         this.saleRepository = saleRepository;
         this.paymentRepository = paymentRepository;
-        this.settingsService = settingsService;
+        this.branchRepository = branchRepository;
+        this.companyService = companyService;
+        this.stockService = stockService;
+        this.docNumberService = docNumberService;
     }
 
     /** Running GST totals for one bill, split into CGST/SGST or IGST. */
@@ -73,16 +84,18 @@ public class InventoryService {
         Supplier supplier = supplierRepository.findById(form.getPartyId())
                 .orElseThrow(() -> new BusinessException("Selected supplier no longer exists."));
 
+        Branch branch = currentBranch();
         Purchase purchase = new Purchase();
+        purchase.setBranch(branch);
         purchase.setSupplier(supplier);
         fillHeader(form, username, purchase::setDate, purchase::setMode, purchase::setDescription, purchase::setCreatedBy);
 
-        TaxTotals totals = new TaxTotals(Gst.isInterState(settingsService.get().getState(), supplier.getState()));
+        TaxTotals totals = new TaxTotals(Gst.isInterState(branch.getState(), supplier.getState()));
         for (TransactionForm.Line line : checkedLines(form)) {
             Product product = findProduct(line.getProductId());
             PurchaseItem item = new PurchaseItem(product, line.getQuantity(), line.getPrice());
             purchase.addItem(item);
-            product.setQuantity(product.getQuantity() + line.getQuantity());
+            stockService.add(branch, product, line.getQuantity());
             product.setCostPrice(line.getPrice());
             totals.add(item.getTaxableValue(), item.getTaxAmount());
         }
@@ -98,9 +111,8 @@ public class InventoryService {
         purchase.setDue(totals.total.subtract(paid));
         supplier.setBalance(supplier.getBalance().add(purchase.getDue()));
 
-        purchaseRepository.save(purchase);
-        purchase.setBillNumber("PUR-%05d".formatted(purchase.getId()));
-        return purchase;
+        purchase.setBillNumber(docNumberService.next(companyService.current(), branch, DocType.PURCHASE, purchase.getDate()));
+        return purchaseRepository.save(purchase);
     }
 
     public Sale createSale(TransactionForm form, String username) {
@@ -108,20 +120,19 @@ public class InventoryService {
         Customer customer = customerRepository.findById(form.getPartyId())
                 .orElseThrow(() -> new BusinessException("Selected customer no longer exists."));
 
+        Branch branch = currentBranch();
         Sale sale = new Sale();
+        sale.setBranch(branch);
         sale.setCustomer(customer);
         fillHeader(form, username, sale::setDate, sale::setMode, sale::setDescription, sale::setCreatedBy);
 
-        TaxTotals totals = new TaxTotals(Gst.isInterState(settingsService.get().getState(), customer.getState()));
+        // GST depends on where the selling branch is registered, not the company's head office.
+        TaxTotals totals = new TaxTotals(Gst.isInterState(branch.getState(), customer.getState()));
         for (TransactionForm.Line line : checkedLines(form)) {
             Product product = findProduct(line.getProductId());
-            if (product.getQuantity() < line.getQuantity()) {
-                throw new BusinessException("Not enough stock for %s: %d available, %d requested."
-                        .formatted(product.getName(), product.getQuantity(), line.getQuantity()));
-            }
             SaleItem item = new SaleItem(product, line.getQuantity(), line.getPrice());
             sale.addItem(item);
-            product.setQuantity(product.getQuantity() - line.getQuantity());
+            stockService.remove(branch, product, line.getQuantity());
             totals.add(item.getTaxableValue(), item.getTaxAmount());
         }
 
@@ -136,9 +147,8 @@ public class InventoryService {
         sale.setDue(totals.total.subtract(paid));
         customer.setBalance(customer.getBalance().add(sale.getDue()));
 
-        saleRepository.save(sale);
-        sale.setBillNumber("INV-%05d".formatted(sale.getId()));
-        return sale;
+        sale.setBillNumber(docNumberService.next(companyService.current(), branch, DocType.SALE, sale.getDate()));
+        return saleRepository.save(sale);
     }
 
     /** Deletes a purchase, taking its goods back out of stock and reversing the supplier due. */
@@ -147,11 +157,11 @@ public class InventoryService {
                 .orElseThrow(() -> new BusinessException("Purchase not found."));
         for (PurchaseItem item : purchase.getItems()) {
             Product product = item.getProduct();
-            if (product.getQuantity() < item.getQuantity()) {
-                throw new BusinessException("Cannot delete: %s has already been sold (only %d left in stock)."
-                        .formatted(product.getName(), product.getQuantity()));
+            if (!stockService.tryRemove(purchase.getBranch(), product, item.getQuantity())) {
+                throw new BusinessException("Cannot delete: %s has already been sold (only %d left in %s)."
+                        .formatted(product.getName(), stockService.quantity(purchase.getBranch(), product),
+                                purchase.getBranch().getName()));
             }
-            product.setQuantity(product.getQuantity() - item.getQuantity());
         }
         Supplier supplier = purchase.getSupplier();
         supplier.setBalance(supplier.getBalance().subtract(purchase.getDue()));
@@ -163,8 +173,7 @@ public class InventoryService {
         Sale sale = saleRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Sale not found."));
         for (SaleItem item : sale.getItems()) {
-            Product product = item.getProduct();
-            product.setQuantity(product.getQuantity() + item.getQuantity());
+            stockService.add(sale.getBranch(), item.getProduct(), item.getQuantity());
         }
         Customer customer = sale.getCustomer();
         customer.setBalance(customer.getBalance().subtract(sale.getDue()));
@@ -191,6 +200,7 @@ public class InventoryService {
             payment.setSupplier(null);
             customer.setBalance(customer.getBalance().subtract(payment.getAmount()));
         }
+        payment.setBranch(currentBranch());
         payment.setCreatedBy(username);
         return paymentRepository.save(payment);
     }
@@ -232,6 +242,14 @@ public class InventoryService {
         if (amount.compareTo(balance) > 0) {
             throw new BusinessException("Amount exceeds the outstanding balance of " + balance + ".");
         }
+    }
+
+    /** The branch selected in the top bar; new bills and payments are recorded there. */
+    private Branch currentBranch() {
+        Branch branch = branchRepository.findById(TenantContext.require().requireBranchId())
+                .orElseThrow(() -> new BusinessException("Selected branch no longer exists."));
+        if (!branch.isActive()) throw new BusinessException("Branch " + branch.getName() + " is inactive.");
+        return branch;
     }
 
     private Product findProduct(Long id) {

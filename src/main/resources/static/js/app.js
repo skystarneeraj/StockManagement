@@ -106,3 +106,71 @@
     renumber();
     recalc();
 })();
+
+// Line-item handling for the stock transfer form.
+(function () {
+    const form = document.getElementById('transfer-form');
+    if (!form) return;
+
+    const tbody = document.getElementById('transfer-lines');
+
+    function renumber() {
+        tbody.querySelectorAll('tr').forEach((row, i) => {
+            row.querySelectorAll('[data-field]').forEach(el => {
+                el.name = `lines[${i}].${el.dataset.field}`;
+            });
+        });
+    }
+
+    function refreshRow(row) {
+        const option = row.querySelector('.product-select').selectedOptions[0];
+        const qtyInput = row.querySelector('.qty');
+        const hasProduct = option && option.value;
+        row.querySelector('.stock-cell').textContent =
+            hasProduct ? `${option.dataset.stock} ${option.dataset.uom || ''}` : '';
+        qtyInput.classList.toggle('is-invalid',
+            Boolean(hasProduct && (parseInt(qtyInput.value, 10) || 0) > parseInt(option.dataset.stock, 10)));
+    }
+
+    function refreshAll() {
+        tbody.querySelectorAll('tr').forEach(refreshRow);
+    }
+
+    function clearRow(row) {
+        row.querySelectorAll('input').forEach(input => {
+            input.value = '';
+            input.classList.remove('is-invalid');
+        });
+        row.querySelector('select').selectedIndex = 0;
+    }
+
+    tbody.addEventListener('change', e => {
+        const row = e.target.closest('tr');
+        const qty = row.querySelector('.qty');
+        if (e.target.classList.contains('product-select') && e.target.value && !qty.value) qty.value = 1;
+        refreshRow(row);
+    });
+
+    tbody.addEventListener('input', e => refreshRow(e.target.closest('tr')));
+
+    tbody.addEventListener('click', e => {
+        const button = e.target.closest('.remove-line');
+        if (!button) return;
+        const row = button.closest('tr');
+        if (tbody.querySelectorAll('tr').length === 1) clearRow(row);
+        else row.remove();
+        renumber();
+    });
+
+    document.getElementById('add-transfer-line').addEventListener('click', () => {
+        const row = tbody.querySelector('tr').cloneNode(true);
+        clearRow(row);
+        tbody.appendChild(row);
+        renumber();
+        refreshRow(row);
+        row.querySelector('select').focus();
+    });
+
+    renumber();
+    refreshAll();
+})();

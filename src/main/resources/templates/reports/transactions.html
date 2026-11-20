@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(${title}, |report-${section}|, ~{::main})}">
 <body>
-<main>
+<main th:with="allBranches=${reportBranch == null}">
     <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
         <div>
             <h1 class="h3 mb-0" th:text="${title}">Report</h1>
-            <div class="text-muted" th:text="|${@fmt.date(from)} to ${@fmt.date(to)}|"></div>
+            <div class="text-muted"><span th:replace="~{fragments :: branchLabel}"></span> ·
+                <span th:text="|${@fmt.date(from)} to ${@fmt.date(to)}|"></span></div>
         </div>
         <form th:action="@{|/reports/${section}|}" method="get" class="d-flex flex-wrap gap-2 align-items-end d-print-none">
+            <div th:replace="~{fragments :: branchFilter}"></div>
             <div><label class="form-label small mb-0" for="from">From</label>
                 <input type="date" id="from" name="from" class="form-control" th:value="${from}"></div>
             <div><label class="form-label small mb-0" for="to">To</label>
@@ -29,24 +31,53 @@
             <div class="fs-4 fw-semibold text-danger" th:text="${@fmt.money(due)}"></div></div></div></div>
     </div>
 
+    <th:block th:if="${allBranches}">
+        <h2 class="h5">Branch-wise summary</h2>
+        <div class="card mb-3" style="max-width: 800px">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Branch</th><th class="text-end">Bills</th><th class="text-end">Total</th>
+                        <th class="text-end">Paid</th><th class="text-end">Due</th></tr></thead>
+                    <tbody>
+                    <tr th:each="b : ${branchTotals}">
+                        <td th:text="${b.branch().name}"></td>
+                        <td class="text-end" th:text="${b.bills()}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.total())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.paid())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.due())}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(branchTotals)}"><td colspan="5" class="text-center text-muted py-3">No bills in this period.</td></tr>
+                    </tbody>
+                    <tfoot th:unless="${#lists.isEmpty(branchTotals)}" class="table-light fw-semibold">
+                    <tr><td>Total</td><td class="text-end" th:text="${#lists.size(rows)}"></td>
+                        <td class="text-end" th:text="${@fmt.money(total)}"></td>
+                        <td class="text-end" th:text="${@fmt.money(paid)}"></td>
+                        <td class="text-end" th:text="${@fmt.money(due)}"></td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </th:block>
+
     <div class="card">
         <div class="table-responsive">
             <table class="table table-sm table-hover mb-0">
-                <thead><tr><th>Date</th><th>Bill No</th><th th:text="${isSale} ? 'Customer' : 'Supplier'"></th>
+                <thead><tr><th>Date</th><th>Bill No</th><th th:if="${allBranches}">Branch</th><th th:text="${isSale} ? 'Customer' : 'Supplier'"></th>
                     <th class="text-end">Total</th><th class="text-end">Paid</th><th class="text-end">Due</th></tr></thead>
                 <tbody>
                 <tr th:each="r : ${rows}">
                     <td th:text="${@fmt.date(r.date)}"></td>
                     <td><a th:href="@{|/${section}/${r.id}|}" th:text="${r.billNumber}"></a></td>
+                    <td th:if="${allBranches}" th:text="${r.branch.name}"></td>
                     <td th:text="${r.partyName}"></td>
                     <td class="text-end" th:text="${@fmt.money(r.subtotal)}"></td>
                     <td class="text-end" th:text="${@fmt.money(r.paid)}"></td>
                     <td class="text-end" th:text="${@fmt.money(r.due)}"></td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(rows)}"><td colspan="6" class="text-center text-muted py-4">No bills in this period.</td></tr>
+                <tr th:if="${#lists.isEmpty(rows)}"><td th:colspan="${allBranches ? 7 : 6}" class="text-center text-muted py-4">No bills in this period.</td></tr>
                 </tbody>
                 <tfoot th:unless="${#lists.isEmpty(rows)}" class="table-light">
-                <tr><th colspan="3" class="text-end">Total</th>
+                <tr><th th:colspan="${allBranches ? 4 : 3}" class="text-end">Total</th>
                     <th class="text-end" th:text="${@fmt.money(total)}"></th>
                     <th class="text-end" th:text="${@fmt.money(paid)}"></th>
                     <th class="text-end" th:text="${@fmt.money(due)}"></th></tr>

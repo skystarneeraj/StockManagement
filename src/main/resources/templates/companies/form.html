@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Company', 'companies', ~{::main})}">
+<body>
+<main>
+    <h1 class="h3 mb-3" th:text="${company.id == null} ? 'Add Company' : 'Edit Company'">Company</h1>
+    <div class="card" style="max-width: 750px">
+        <div class="card-body">
+            <form th:action="@{/companies}" th:object="${company}" method="post">
+                <input type="hidden" th:field="*{id}">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label" for="name">Business name *</label>
+                        <input type="text" class="form-control" th:field="*{name}" th:errorclass="is-invalid" required>
+                        <div class="invalid-feedback" th:errors="*{name}"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="code">Short code *</label>
+                        <input type="text" class="form-control text-uppercase" th:field="*{code}" th:errorclass="is-invalid"
+                               maxlength="10" required placeholder="e.g. KT">
+                        <div class="invalid-feedback" th:errors="*{code}"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="address">Address</label>
+                    <textarea class="form-control" rows="2" th:field="*{address}" th:errorclass="is-invalid"></textarea>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="phone">Phone</label>
+                        <input type="text" class="form-control" th:field="*{phone}" th:errorclass="is-invalid">
+                        <div class="invalid-feedback" th:errors="*{phone}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" class="form-control" th:field="*{email}" th:errorclass="is-invalid">
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="gstin">GSTIN</label>
+                        <input type="text" class="form-control text-uppercase" th:field="*{gstin}" th:errorclass="is-invalid" maxlength="15">
+                        <div class="invalid-feedback" th:errors="*{gstin}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="state">State</label>
+                        <select class="form-select" th:field="*{state}">
+                            <option value="">-- From GSTIN / not set --</option>
+                            <option th:each="s : ${states}" th:value="${s}" th:text="${s}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <th:block th:if="${company.id == null}">
+                    <h2 class="h6 mt-4">First admin login</h2>
+                    <p class="form-text">A Head Office branch is created with the details above; this user can then add branches and users.</p>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="adminUsername">Username *</label>
+                            <input type="text" class="form-control" id="adminUsername" name="adminUsername" th:value="${adminUsername}"
+                                   th:classappend="${adminUsernameError != null} ? 'is-invalid'" required>
+                            <div class="invalid-feedback" th:text="${adminUsernameError}"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="adminPassword">Password *</label>
+                            <input type="password" class="form-control" id="adminPassword" name="adminPassword" autocomplete="new-password"
+                                   th:classappend="${adminPasswordError != null} ? 'is-invalid'" required>
+                            <div class="invalid-feedback" th:text="${adminPasswordError}"></div>
+                        </div>
+                    </div>
+                </th:block>
+
+                <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
+                <a th:href="@{/companies}" class="btn btn-link">Cancel</a>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

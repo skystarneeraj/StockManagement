@@ -2,6 +2,10 @@ package com.stockms.config;
 
 import com.stockms.entity.*;
 import com.stockms.repository.*;
+import com.stockms.service.CompanyService;
+import com.stockms.service.StockService;
+import com.stockms.tenant.Tenant;
+import com.stockms.tenant.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,14 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Set;
 
-/** Creates the default admin account and some sample data on first start. */
+/**
+ * Creates the super admin login, and on a fresh database a first company with its Head Office,
+ * an admin login and some sample data. Existing data is moved into a company by the V2 migration.
+ */
 @Component
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final AppUserRepository userRepository;
+    private final CompanyRepository companyRepository;
+    private final BranchRepository branchRepository;
     private final CategoryRepository categoryRepository;
     private final UomRepository uomRepository;
     private final SupplierRepository supplierRepository;
@@ -27,17 +37,23 @@ public class DataInitializer implements CommandLineRunner {
     private final ProductRepository productRepository;
     private final SaleRepository saleRepository;
     private final PurchaseRepository purchaseRepository;
-    private final CompanySettingsRepository settingsRepository;
+    private final CompanyService companyService;
+    private final StockService stockService;
     private final PasswordEncoder passwordEncoder;
     private final String adminPassword;
+    private final String superAdminPassword;
 
-    public DataInitializer(AppUserRepository userRepository, CategoryRepository categoryRepository,
+    public DataInitializer(AppUserRepository userRepository, CompanyRepository companyRepository,
+                           BranchRepository branchRepository, CategoryRepository categoryRepository,
                            UomRepository uomRepository, SupplierRepository supplierRepository,
                            CustomerRepository customerRepository, ProductRepository productRepository,
                            SaleRepository saleRepository, PurchaseRepository purchaseRepository,
-                           CompanySettingsRepository settingsRepository, PasswordEncoder passwordEncoder,
-                           @Value("${app.admin-password:admin}") String adminPassword) {
+                           CompanyService companyService, StockService stockService, PasswordEncoder passwordEncoder,
+                           @Value("${app.admin-password:admin}") String adminPassword,
+                           @Value("${app.superadmin-password:superadmin}") String superAdminPassword) {
         this.userRepository = userRepository;
+        this.companyRepository = companyRepository;
+        this.branchRepository = branchRepository;
         this.categoryRepository = categoryRepository;
         this.uomRepository = uomRepository;
         this.supplierRepository = supplierRepository;
@@ -45,25 +61,41 @@ public class DataInitializer implements CommandLineRunner {
         this.productRepository = productRepository;
         this.saleRepository = saleRepository;
         this.purchaseRepository = purchaseRepository;
-        this.settingsRepository = settingsRepository;
+        this.companyService = companyService;
+        this.stockService = stockService;
         this.passwordEncoder = passwordEncoder;
         this.adminPassword = adminPassword;
+        this.superAdminPassword = superAdminPassword;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        if (userRepository.count() == 0) {
-            userRepository.save(new AppUser("admin", passwordEncoder.encode(adminPassword), AppUser.Role.ADMIN));
-            log.warn("Created default admin login - change its password under Users after signing in.");
-        }
-        if (!settingsRepository.existsById(CompanySettings.ID)) {
-            settingsRepository.save(new CompanySettings());
+        if (!userRepository.existsByRole(AppUser.Role.SUPER_ADMIN)) {
+            if (userRepository.findByUsernameIgnoreCase("superadmin").isPresent()) {
+                log.warn("No super admin exists and the name 'superadmin' is taken; give an existing user the SUPER_ADMIN role in the database.");
+            } else {
+                userRepository.save(new AppUser("superadmin", passwordEncoder.encode(superAdminPassword), AppUser.Role.SUPER_ADMIN));
+                log.warn("Created the 'superadmin' login for managing companies - change its password after signing in.");
+            }
         }
         int updated = saleRepository.backfillTaxableAmount() + purchaseRepository.backfillTaxableAmount();
         if (updated > 0) log.info("Set taxable value on {} bills saved before GST support.", updated);
-        if (productRepository.count() > 0) return;
+        if (companyRepository.count() > 0) return;
 
+        Company form = new Company();
+        form.setName("My Company");
+        form.setCode("MC");
+        Company company = companyService.create(form, "admin", adminPassword);
+        log.warn("Created company 'My Company' with the default admin login - change its password under Users after signing in.");
+
+        Branch headOffice = TenantContext.callAs(Tenant.system(company.getId(), Set.of(), null),
+                () -> branchRepository.findAllByOrderByHeadOfficeDescNameAsc().getFirst());
+        TenantContext.runAs(Tenant.system(company.getId(), Set.of(headOffice.getId()), headOffice.getId()),
+                () -> createSampleData(headOffice));
+    }
+
+    private void createSampleData(Branch branch) {
         Category electronics = categoryRepository.save(new Category("Electronics", "Electronic items and accessories"));
         Category grocery = categoryRepository.save(new Category("Grocery", "Food and household items"));
         Category stationery = categoryRepository.save(new Category("Stationery", "Office and school supplies"));
@@ -76,16 +108,16 @@ public class DataInitializer implements CommandLineRunner {
         customerRepository.save(new Customer("Walk-in Customer", "", ""));
         customerRepository.save(new Customer("Sri Ram Stores", "45 Main Street", "9123456780"));
 
-        productRepository.save(product("P001", "USB Mouse", "8471", "18", electronics, pcs, supplier, "250", "350", 40, 10));
-        productRepository.save(product("P002", "Keyboard", "8471", "18", electronics, pcs, supplier, "450", "600", 25, 5));
-        productRepository.save(product("P003", "Basmati Rice", "1006", "5", grocery, kg, supplier, "80", "95", 200, 50));
-        productRepository.save(product("P004", "A4 Paper Ream", "4802", "18", stationery, box, supplier, "220", "280", 3, 10));
+        product(branch, "P001", "USB Mouse", "8471", "18", electronics, pcs, supplier, "250", "350", 40, 10);
+        product(branch, "P002", "Keyboard", "8471", "18", electronics, pcs, supplier, "450", "600", 25, 5);
+        product(branch, "P003", "Basmati Rice", "1006", "5", grocery, kg, supplier, "80", "95", 200, 50);
+        product(branch, "P004", "A4 Paper Ream", "4802", "18", stationery, box, supplier, "220", "280", 3, 10);
         log.info("Sample categories, units, parties and products created.");
     }
 
-    private static Product product(String code, String name, String hsn, String gstRate,
-                                   Category category, Uom uom, Supplier supplier,
-                                   String cost, String price, int quantity, int reorderLevel) {
+    private void product(Branch branch, String code, String name, String hsn, String gstRate,
+                         Category category, Uom uom, Supplier supplier,
+                         String cost, String price, int quantity, int reorderLevel) {
         Product p = new Product();
         p.setCode(code);
         p.setName(name);
@@ -96,9 +128,8 @@ public class DataInitializer implements CommandLineRunner {
         p.setSupplier(supplier);
         p.setCostPrice(new BigDecimal(cost));
         p.setSellingPrice(new BigDecimal(price));
-        p.setQuantity(quantity);
         p.setReorderLevel(reorderLevel);
         if (category.getName().equals("Grocery")) p.setExpiryDate(LocalDate.now().plusMonths(6));
-        return p;
+        stockService.add(branch, productRepository.save(p), quantity);
     }
 }

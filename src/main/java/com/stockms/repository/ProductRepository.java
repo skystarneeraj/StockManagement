@@ -19,7 +19,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                or lower(p.code) like lower(concat('%', :q, '%'))
             order by p.name""")
     List<Product> search(String q);
-
-    @Query("select p from Product p where p.quantity <= p.reorderLevel order by p.quantity, p.name")
-    List<Product> findLowStock();
 }

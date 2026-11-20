@@ -52,9 +52,13 @@ public class CategoryController {
                 .ifPresent(existing -> result.rejectValue("name", "duplicate", "already exists"));
         if (result.hasErrors()) return "simple/form";
 
-        item.setName(item.getName().trim());
-        repository.save(item);
-        redirect.addFlashAttribute("success", "Category '" + item.getName() + "' saved.");
+        // Load the stored record (not found if it is another company's) and copy the editable fields.
+        Category target = item.getId() == null ? new Category()
+                : repository.findById(item.getId()).orElseThrow(NotFoundException::new);
+        target.setName(item.getName().trim());
+        target.setDescription(item.getDescription());
+        repository.save(target);
+        redirect.addFlashAttribute("success", "Category '" + target.getName() + "' saved.");
         return "redirect:/categories";
     }
 

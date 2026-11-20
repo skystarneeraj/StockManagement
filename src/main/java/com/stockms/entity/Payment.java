@@ -12,7 +12,7 @@ import java.time.LocalDate;
 /** A payment settling an outstanding supplier or customer balance. */
 @Entity
 @Table(name = "payments")
-public class Payment {
+public class Payment extends BranchOwned {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

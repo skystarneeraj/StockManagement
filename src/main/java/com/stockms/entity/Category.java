@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @Entity
-@Table(name = "categories")
-public class Category {
+@Table(name = "categories", uniqueConstraints = @UniqueConstraint(columnNames = {"company_id", "name"}))
+public class Category extends CompanyOwned {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,7 +14,7 @@ public class Category {
 
     @NotBlank
     @Size(max = 100)
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Size(max = 255)

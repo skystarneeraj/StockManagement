@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Companies', 'companies', ~{::main})}">
+<body>
+<main>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Companies</h1>
+        <a th:href="@{/companies/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Company</a>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Code</th><th>Name</th><th>State</th><th>GSTIN</th><th class="text-end">Users</th>
+                    <th>Created</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                <tr th:each="entry : ${companies}" th:with="c=${entry.key}" th:classappend="${!c.active} ? 'text-muted'">
+                    <td class="font-monospace" th:text="${c.code}"></td>
+                    <td class="fw-medium" th:text="${c.name}"></td>
+                    <td th:text="${c.state}"></td>
+                    <td class="font-monospace small" th:text="${c.gstin}"></td>
+                    <td class="text-end" th:text="${entry.value}"></td>
+                    <td th:text="${@fmt.date(c.createdAt.toLocalDate())}"></td>
+                    <td><span class="badge" th:classappend="${c.active} ? 'text-bg-success' : 'text-bg-secondary'"
+                              th:text="${c.active} ? 'Active' : 'Inactive'"></span></td>
+                    <td class="text-end text-nowrap">
+                        <a th:href="@{/companies/{id}/edit(id=${c.id})}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <form th:action="@{/companies/{id}/active(id=${c.id})}" method="post" class="d-inline"
+                              onsubmit="return confirm('Change this company\'s status? Users of an inactive company cannot sign in.')">
+                            <input type="hidden" name="active" th:value="${!c.active}">
+                            <button class="btn btn-sm" th:classappend="${c.active} ? 'btn-outline-danger' : 'btn-outline-success'"
+                                    th:title="${c.active} ? 'Deactivate' : 'Activate'">
+                                <i class="bi" th:classappend="${c.active} ? 'bi-pause-circle' : 'bi-play-circle'"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#maps.isEmpty(companies)}"><td colspan="8" class="text-center text-muted py-4">No companies yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

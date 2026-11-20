@@ -16,6 +16,7 @@
 
             <div th:if="${param.error}" class="alert alert-danger py-2">Invalid username or password.</div>
             <div th:if="${param.logout}" class="alert alert-success py-2">You have been logged out.</div>
+            <div th:if="${param.disabled}" class="alert alert-warning py-2">Your account or company is no longer active.</div>
 
             <form th:action="@{/login}" method="post">
                 <div class="mb-3">

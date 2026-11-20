@@ -7,6 +7,7 @@ import com.stockms.repository.PaymentRepository;
 import com.stockms.repository.SupplierRepository;
 import com.stockms.service.BusinessException;
 import com.stockms.service.InventoryService;
+import com.stockms.tenant.TenantContext;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -36,7 +37,7 @@ public class PaymentController {
 
     @GetMapping
     String list(Model model) {
-        model.addAttribute("payments", paymentRepository.findAllByOrderByDateDescIdDesc());
+        model.addAttribute("payments", paymentRepository.findByBranchIdInOrderByDateDescIdDesc(TenantContext.require().scopeForQuery()));
         return "payments/list";
     }
 

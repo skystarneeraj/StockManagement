@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Stock Report', 'report-stock', ~{::main})}">
 <body>
-<main>
-    <div class="d-flex justify-content-between align-items-center mb-3">
+<main th:with="perBranch=${reportBranch == null and #lists.size(branches) > 1}">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
         <div>
             <h1 class="h3 mb-0">Stock Report</h1>
-            <div class="text-muted" th:text="|As of ${@fmt.date(today)}|"></div>
+            <div class="text-muted"><span th:replace="~{fragments :: branchLabel}"></span> ·
+                <span th:text="|As of ${@fmt.date(today)}|"></span></div>
         </div>
-        <button type="button" class="btn btn-outline-secondary d-print-none" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+        <form th:action="@{/reports/stock}" method="get" class="d-flex flex-wrap gap-2 align-items-end d-print-none">
+            <div th:replace="~{fragments :: branchFilter}"></div>
+            <button class="btn btn-primary"><i class="bi bi-funnel"></i> Show</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+        </form>
     </div>
 
     <div class="row g-3 mb-3">
@@ -22,16 +27,45 @@
             <div class="fs-4 fw-semibold text-danger" th:text="${lowCount}"></div></div></div></div>
     </div>
 
+    <th:block th:if="${perBranch}">
+        <h2 class="h5">Branch-wise summary</h2>
+        <div class="card mb-3" style="max-width: 700px">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Branch</th><th class="text-end">Units</th><th class="text-end">Value</th>
+                        <th class="text-end">Low on stock</th></tr></thead>
+                    <tbody>
+                    <tr th:each="b : ${branchTotals}">
+                        <td th:text="${b.branch().name}"></td>
+                        <td class="text-end" th:text="${b.units()}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.value())}"></td>
+                        <td class="text-end" th:text="${b.lowCount()}"></td>
+                    </tr>
+                    </tbody>
+                    <tfoot class="table-light fw-semibold">
+                    <tr><td>Total</td><td class="text-end" th:text="${totalUnits}"></td>
+                        <td class="text-end" th:text="${@fmt.money(totalValue)}"></td><td></td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </th:block>
+
     <div class="card">
         <div class="table-responsive">
             <table class="table table-sm table-hover mb-0">
-                <thead><tr><th>Code</th><th>Product</th><th>Category</th><th class="text-end">Qty</th><th class="text-end">Reorder at</th>
+                <thead><tr><th>Code</th><th>Product</th><th>Category</th>
+                    <th th:if="${perBranch}" th:each="b : ${branches}" class="text-end" th:text="${b.code}"
+                        th:title="${b.name}"></th>
+                    <th class="text-end" th:text="${perBranch} ? 'Total' : 'Qty'">Qty</th><th class="text-end">Reorder at</th>
                     <th class="text-end">Cost</th><th class="text-end">Value</th><th>Status</th></tr></thead>
                 <tbody>
                 <tr th:each="p : ${products}">
                     <td class="text-muted" th:text="${p.code}"></td>
                     <td th:text="${p.name}"></td>
                     <td th:text="${p.category?.name}"></td>
+                    <td th:if="${perBranch}" th:each="b : ${branches}" class="text-end"
+                        th:text="${byBranch[b.id] != null and byBranch[b.id][p.id] != null} ? ${byBranch[b.id][p.id]} : 0"></td>
                     <td class="text-end" th:text="|${p.quantity} ${p.uom?.name ?: ''}|"></td>
                     <td class="text-end" th:text="${p.reorderLevel}"></td>
                     <td class="text-end" th:text="${@fmt.money(p.costPrice)}"></td>
@@ -41,7 +75,8 @@
                 </tr>
                 </tbody>
                 <tfoot class="table-light">
-                <tr><th colspan="6" class="text-end">Total</th><th class="text-end" th:text="${@fmt.money(totalValue)}"></th><th></th></tr>
+                <tr><th th:colspan="${perBranch ? 6 + #lists.size(branches) : 6}" class="text-end">Total</th>
+                    <th class="text-end" th:text="${@fmt.money(totalValue)}"></th><th></th></tr>
                 </tfoot>
             </table>
         </div>

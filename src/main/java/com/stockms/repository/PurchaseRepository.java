@@ -7,18 +7,19 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
-    List<Purchase> findAllByOrderByDateDescIdDesc();
+    List<Purchase> findByBranchIdInOrderByDateDescIdDesc(Collection<Long> branchIds);
 
-    List<Purchase> findTop5ByOrderByIdDesc();
+    List<Purchase> findTop5ByBranchIdInOrderByIdDesc(Collection<Long> branchIds);
 
-    List<Purchase> findByDateBetweenOrderByDateAscIdAsc(LocalDate from, LocalDate to);
+    List<Purchase> findByBranchIdInAndDateBetweenOrderByDateAscIdAsc(Collection<Long> branchIds, LocalDate from, LocalDate to);
 
-    @Query("select coalesce(sum(x.subtotal), 0) from Purchase x where x.date between :from and :to")
-    BigDecimal totalBetween(LocalDate from, LocalDate to);
+    @Query("select coalesce(sum(x.subtotal), 0) from Purchase x where x.branch.id in :branchIds and x.date between :from and :to")
+    BigDecimal totalBetween(Collection<Long> branchIds, LocalDate from, LocalDate to);
 
     /** Bills saved before GST was added have no tax, so their whole amount is taxable value. */
     @Modifying

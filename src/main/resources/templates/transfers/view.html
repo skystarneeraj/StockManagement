@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(${transfer.transferNumber}, 'transfers', ~{::main})}">
+<body>
+<main th:with="t=${transfer}, status=${transfer.status.name()}">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2 d-print-none">
+        <a th:href="@{/transfers}" class="btn btn-link px-0"><i class="bi bi-arrow-left"></i> Back to Stock Transfers</a>
+        <div class="d-flex flex-wrap gap-2">
+            <form th:if="${status == 'DRAFT' and canSend}" th:action="@{/transfers/{id}/dispatch(id=${t.id})}" method="post"
+                  onsubmit="return confirm('Dispatch now? The stock is taken out of the sending branch.')">
+                <button class="btn btn-warning"><i class="bi bi-truck"></i> Dispatch</button>
+            </form>
+            <form th:if="${status == 'DRAFT' and canSend}" th:action="@{/transfers/{id}/delete(id=${t.id})}" method="post"
+                  onsubmit="return confirm('Delete this draft transfer?')">
+                <button class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete</button>
+            </form>
+            <form th:if="${status == 'IN_TRANSIT' and canReceive}" th:action="@{/transfers/{id}/receive(id=${t.id})}" method="post"
+                  onsubmit="return confirm('Mark as received? The stock is added to the receiving branch.')">
+                <button class="btn btn-success"><i class="bi bi-box-arrow-in-down"></i> Receive</button>
+            </form>
+            <form th:if="${status == 'IN_TRANSIT' and canSend}" th:action="@{/transfers/{id}/recall(id=${t.id})}" method="post"
+                  onsubmit="return confirm('Recall this transfer? The stock goes back to the sending branch.')">
+                <button class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> Recall</button>
+            </form>
+            <button type="button" class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 900px">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between mb-4 gap-3">
+                <div>
+                    <div class="fw-bold fs-5">STOCK TRANSFER</div>
+                    <div class="fs-5 fw-semibold" th:text="${t.transferNumber}"></div>
+                    <div th:text="|Date: ${@fmt.date(t.date)}|"></div>
+                </div>
+                <div class="text-end">
+                    <span class="badge fs-6" th:text="${t.status.label}"
+                          th:classappend="${status == 'RECEIVED'} ? 'text-bg-success' : (${status == 'IN_TRANSIT'} ? 'text-bg-warning' : 'text-bg-secondary')"></span>
+                    <div class="small text-muted mt-1" th:if="${t.receivedBy}"
+                         th:text="|Received by ${t.receivedBy} on ${@fmt.date(t.receivedDate)}|"></div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-6">
+                    <div class="text-muted small">From</div>
+                    <div class="fw-semibold" th:text="${t.fromBranch.name}"></div>
+                    <div th:if="${t.fromBranch.address}" th:text="${t.fromBranch.address}"></div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted small">To</div>
+                    <div class="fw-semibold" th:text="${t.toBranch.name}"></div>
+                    <div th:if="${t.toBranch.address}" th:text="${t.toBranch.address}"></div>
+                </div>
+            </div>
+            <table class="table table-bordered table-sm">
+                <thead class="table-light"><tr><th style="width: 40px">#</th><th>Item</th><th class="text-end">Qty</th></tr></thead>
+                <tbody>
+                <tr th:each="item, st : ${t.items}">
+                    <td th:text="${st.count}"></td>
+                    <td th:text="|${item.product.code} - ${item.product.name}|"></td>
+                    <td class="text-end" th:text="|${item.quantity} ${item.product.uom?.name ?: ''}|"></td>
+                </tr>
+                </tbody>
+                <tfoot class="table-light fw-semibold">
+                <tr><td colspan="2" class="text-end">Total units</td><td class="text-end" th:text="${t.totalQuantity}"></td></tr>
+                </tfoot>
+            </table>
+            <p th:if="${t.notes}" class="mb-1"><span class="text-muted">Notes:</span> <span th:text="${t.notes}"></span></p>
+            <p class="text-muted small mb-0" th:text="|Entered by ${t.createdBy}|"></p>
+        </div>
+    </div>
+</main>
+</body>
+</html>

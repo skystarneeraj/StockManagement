@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Branch filter for report forms: one branch, or all branches the user may access. -->
+<div th:fragment="branchFilter">
+    <label class="form-label small mb-0" for="branch">Branch</label>
+    <select id="branch" name="branch" class="form-select">
+        <option value="all" th:selected="${reportBranch == null}">All my branches</option>
+        <option th:each="b : ${reportBranches}" th:value="${b.id}"
+                th:text="${b.active} ? ${b.name} : |${b.name} (inactive)|"
+                th:selected="${reportBranch != null and reportBranch.id == b.id}"></option>
+    </select>
+</div>
+
+<!-- Report subtitle naming the branch(es) covered. -->
+<span th:fragment="branchLabel" th:text="${reportBranch != null} ? ${reportBranch.name} : 'All my branches'"></span>
+</body>
+</html>

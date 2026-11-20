@@ -5,13 +5,14 @@
     <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
         <div>
             <h1 class="h3 mb-0">GST Report</h1>
-            <div class="text-muted">
-                <span th:text="${company.name}"></span>
-                <span th:if="${company.gstin}" th:text="| · GSTIN ${company.gstin}|"></span>
+            <div class="text-muted" th:with="gstin=${reportBranch != null ? reportBranch.gstinOr(company) : company.gstin}">
+                <span th:text="${company.name}"></span> · <span th:replace="~{fragments :: branchLabel}"></span>
+                <span th:if="${gstin}" th:text="| · GSTIN ${gstin}|"></span>
                 · <span th:text="|${@fmt.date(r.from())} to ${@fmt.date(r.to())}|"></span>
             </div>
         </div>
         <form th:action="@{/reports/gst}" method="get" class="d-flex flex-wrap gap-2 align-items-end d-print-none">
+            <div th:replace="~{fragments :: branchFilter}"></div>
             <div><label class="form-label small mb-0" for="from">From</label>
                 <input type="date" id="from" name="from" class="form-control" th:value="${r.from()}"></div>
             <div><label class="form-label small mb-0" for="to">To</label>
@@ -32,6 +33,39 @@
             <div class="text-muted small" th:text="${r.netPayable().signum() >= 0} ? 'Net GST payable' : 'Credit carried forward'"></div>
             <div class="fs-4 fw-semibold text-danger" th:text="${@fmt.money(r.netPayable().abs())}"></div></div></div></div>
     </div>
+
+    <th:block th:if="${reportBranch == null}">
+        <h2 class="h5">Branch-wise summary</h2>
+        <p class="text-muted small">Each branch files under its own GSTIN when it has one, otherwise under the company GSTIN.</p>
+        <div class="card mb-4">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Branch</th><th>GSTIN</th><th class="text-end">Sales taxable</th><th class="text-end">Output GST</th>
+                        <th class="text-end">Purchases taxable</th><th class="text-end">Input credit</th><th class="text-end">Net payable</th></tr></thead>
+                    <tbody>
+                    <tr th:each="b : ${r.branches()}">
+                        <td th:text="${b.branch().name}"></td>
+                        <td class="font-monospace small" th:text="${b.branch().gstinOr(company) ?: '-'}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.salesTaxable())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.outputTax())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.purchasesTaxable())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.inputTax())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(b.netPayable())}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(r.branches())}"><td colspan="7" class="text-center text-muted py-3">No bills in this period.</td></tr>
+                    </tbody>
+                    <tfoot th:unless="${#lists.isEmpty(r.branches())}" class="table-light fw-semibold">
+                    <tr><td colspan="2">Total</td>
+                        <td class="text-end" th:text="${@fmt.money(r.salesTotal().taxable())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(r.salesTotal().tax())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(r.purchasesTotal().taxable())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(r.purchasesTotal().tax())}"></td>
+                        <td class="text-end" th:text="${@fmt.money(r.netPayable())}"></td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </th:block>
 
     <th:block th:each="part : ${ {'sales', 'purchases'} }"
               th:with="rows=${part == 'sales' ? r.sales() : r.purchases()}, total=${part == 'sales' ? r.salesTotal() : r.purchasesTotal()}">

@@ -86,3 +86,9 @@ body {
         box-shadow: none !important;
     }
 }
+
+/* Branch switcher in the dark top bar. */
+.branch-switch {
+    min-width: 10rem;
+    max-width: 16rem;
+}

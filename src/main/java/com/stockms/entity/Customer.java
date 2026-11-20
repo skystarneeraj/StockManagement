@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "customers")
-public class Customer {
+public class Customer extends CompanyOwned {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

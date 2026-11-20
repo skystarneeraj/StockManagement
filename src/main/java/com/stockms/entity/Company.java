@@ -7,20 +7,27 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/** Your own business details, printed on invoices. There is a single row with id 1. */
-@Entity
-@Table(name = "company_settings")
-public class CompanySettings {
+import java.time.LocalDateTime;
 
-    public static final long ID = 1L;
+/** A business using the system. Its details and logo are printed on invoices. */
+@Entity
+@Table(name = "companies")
+public class Company {
 
     @Id
-    private Long id = ID;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NotBlank
     @Size(max = 150)
     @Column(nullable = false, length = 150)
     private String name = "My Company";
+
+    /** Short code at the start of invoice numbers, e.g. KT in KT-DEL-2026-27/0001. */
+    @NotBlank
+    @Pattern(regexp = "[A-Z0-9]{1,10}", message = "must be 1-10 capital letters or digits")
+    @Column(nullable = false, unique = true, length = 10)
+    private String code;
 
     @Size(max = 255)
     private String address;
@@ -36,7 +43,7 @@ public class CompanySettings {
     @Column(length = 15)
     private String gstin;
 
-    /** Decides CGST+SGST (same state as the party) or IGST (different state). */
+    /** Registered state; GST on bills is decided by each branch's own state. */
     @Size(max = 50)
     @Column(length = 50)
     private String state;
@@ -48,10 +55,27 @@ public class CompanySettings {
     @Column(length = 20)
     private String logoType;
 
+    /** When false, a sale or transfer may not take a branch's stock below zero. */
+    @Column(nullable = false)
+    private boolean allowNegativeStock;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    void stampCreated() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code == null ? null : code.trim().toUpperCase(); }
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
     public String getPhone() { return phone; }
@@ -67,4 +91,9 @@ public class CompanySettings {
     public String getLogoType() { return logoType; }
     public void setLogoType(String logoType) { this.logoType = logoType; }
     public boolean hasLogo() { return logo != null && logo.length > 0; }
+    public boolean isAllowNegativeStock() { return allowNegativeStock; }
+    public void setAllowNegativeStock(boolean allowNegativeStock) { this.allowNegativeStock = allowNegativeStock; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }

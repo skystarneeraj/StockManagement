@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('New Transfer', 'transfers', ~{::main})}">
+<body>
+<main>
+    <h1 class="h3 mb-1">New Stock Transfer</h1>
+    <p class="text-muted" th:if="${currentBranch != null}">From: <strong th:text="${currentBranch.name}"></strong></p>
+    <div class="alert alert-warning" th:if="${currentBranch == null}">
+        <i class="bi bi-exclamation-triangle"></i> Choose the sending branch in the top bar first.</div>
+
+    <form id="transfer-form" th:action="@{/transfers}" th:object="${form}" method="post">
+        <div class="card mb-3">
+            <div class="card-body row g-3">
+                <div class="col-md-5">
+                    <label class="form-label" for="toBranchId">To branch *</label>
+                    <select id="toBranchId" name="toBranchId" class="form-select" required>
+                        <option value="">-- Select --</option>
+                        <option th:each="b : ${toBranches}" th:value="${b.id}" th:text="${b.name}"
+                                th:selected="${b.id == form.toBranchId}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="date">Date</label>
+                    <input type="date" class="form-control" th:field="*{date}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="notes">Notes</label>
+                    <input type="text" class="form-control" th:field="*{notes}" maxlength="255">
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">Items</div>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead><tr><th>Product</th><th>In this branch</th><th style="width: 140px">Qty</th><th></th></tr></thead>
+                    <tbody id="transfer-lines">
+                    <tr th:each="line, st : *{lines}">
+                        <td>
+                            <select class="form-select product-select" data-field="productId" th:name="|lines[${st.index}].productId|">
+                                <option value="">-- Select product --</option>
+                                <option th:each="p : ${products}" th:value="${p.id}" th:text="|${p.code} - ${p.name}|"
+                                        th:data-stock="${p.quantity}" th:data-uom="${p.uom?.name}"
+                                        th:selected="${p.id == line.productId}"></option>
+                            </select>
+                        </td>
+                        <td class="stock-cell text-muted text-nowrap"></td>
+                        <td><input type="number" min="1" class="form-control qty" data-field="quantity"
+                                   th:name="|lines[${st.index}].quantity|" th:value="${line.quantity}"></td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-line" title="Remove"><i class="bi bi-x-lg"></i></button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-body">
+                <button type="button" id="add-transfer-line" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add item</button>
+            </div>
+        </div>
+
+        <p class="form-text">The transfer is saved as a draft. Stock leaves this branch when you dispatch it, and arrives when the other branch receives it.</p>
+        <button class="btn btn-primary btn-lg"><i class="bi bi-check-lg"></i> Save draft</button>
+        <a th:href="@{/transfers}" class="btn btn-link">Cancel</a>
+    </form>
+</main>
+</body>
+</html>

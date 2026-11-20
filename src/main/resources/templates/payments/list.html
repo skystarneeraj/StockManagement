@@ -12,10 +12,11 @@
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
-                <thead><tr><th>Date</th><th>Type</th><th>Party</th><th class="text-end">Amount</th><th>Mode</th><th>Note</th><th>By</th></tr></thead>
+                <thead><tr><th>Date</th><th th:if="${currentBranch == null}">Branch</th><th>Type</th><th>Party</th><th class="text-end">Amount</th><th>Mode</th><th>Note</th><th>By</th></tr></thead>
                 <tbody>
                 <tr th:each="p : ${payments}">
                     <td th:text="${@fmt.date(p.date)}"></td>
+                    <td th:if="${currentBranch == null}" th:text="${p.branch.name}"></td>
                     <td><span class="badge" th:classappend="${p.type.name() == 'CUSTOMER_RECEIPT'} ? 'text-bg-success' : 'text-bg-primary'"
                               th:text="${p.type.label}"></span></td>
                     <td th:text="${p.partyName}"></td>
@@ -24,7 +25,7 @@
                     <td class="text-muted" th:text="${p.note}"></td>
                     <td class="text-muted" th:text="${p.createdBy}"></td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(payments)}"><td colspan="7" class="text-center text-muted py-4">No payments recorded yet.</td></tr>
+                <tr th:if="${#lists.isEmpty(payments)}"><td th:colspan="${currentBranch == null ? 8 : 7}" class="text-center text-muted py-4">No payments recorded yet.</td></tr>
                 </tbody>
             </table>
         </div>

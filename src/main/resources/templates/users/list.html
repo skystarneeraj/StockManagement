@@ -6,14 +6,18 @@
         <h1 class="h3 mb-0">Users</h1>
         <a th:href="@{/users/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add User</a>
     </div>
-    <div class="card" style="max-width: 700px">
+    <div class="card" style="max-width: 900px">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
-                <thead><tr><th>Username</th><th>Role</th><th class="text-end">Actions</th></tr></thead>
+                <thead><tr><th>Username</th><th>Role</th><th>Branches</th><th class="text-end">Actions</th></tr></thead>
                 <tbody>
                 <tr th:each="u : ${users}">
                     <td class="fw-medium" th:text="${u.username}"></td>
-                    <td><span class="badge" th:classappend="${u.role.name() == 'ADMIN'} ? 'text-bg-dark' : 'text-bg-secondary'" th:text="${u.role}"></span></td>
+                    <td><span class="badge" th:classappend="${u.companyAdmin} ? 'text-bg-dark' : 'text-bg-secondary'" th:text="${u.role.label}"></span></td>
+                    <td class="small">
+                        <span th:if="${u.companyAdmin}" class="text-muted">All branches</span>
+                        <span th:unless="${u.companyAdmin}" th:text="${#strings.listJoin(u.branches.![name], ', ')}"></span>
+                    </td>
                     <td class="text-end text-nowrap">
                         <a th:href="@{/users/{id}/edit(id=${u.id})}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                         <form th:action="@{/users/{id}/delete(id=${u.id})}" method="post" class="d-inline"

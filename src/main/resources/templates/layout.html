@@ -21,6 +21,18 @@
             <a class="navbar-brand" th:href="@{/}"><i class="bi bi-box-seam"></i> StockMS</a>
         </div>
         <div class="d-flex align-items-center gap-3 text-light">
+            <th:block th:if="${currentCompany != null}">
+                <span class="small d-none d-md-inline"><i class="bi bi-building"></i> <span th:text="${currentCompany.name}">Company</span></span>
+                <form th:action="@{/branch/switch}" method="post" class="m-0">
+                    <select name="branchId" class="form-select form-select-sm branch-switch" aria-label="Branch"
+                            onchange="this.form.submit()">
+                        <option th:if="${canSeeAllBranches}" value="0" th:selected="${currentBranch == null}">All branches</option>
+                        <option th:each="b : ${switchBranches}" th:value="${b.id}" th:text="${b.name}"
+                                th:selected="${currentBranch != null and currentBranch.id == b.id}"></option>
+                        <option th:if="${#lists.isEmpty(switchBranches) and !canSeeAllBranches}" value="" selected>No branch assigned</option>
+                    </select>
+                </form>
+            </th:block>
             <span class="small"><i class="bi bi-person-circle"></i> <span sec:authentication="name">user</span></span>
             <form th:action="@{/logout}" method="post" class="m-0">
                 <button class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i> Logout</button>
@@ -35,7 +47,11 @@
             <h5 class="offcanvas-title">Menu</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"></button>
         </div>
-        <nav class="nav flex-column p-2">
+        <nav class="nav flex-column p-2" sec:authorize="hasRole('SUPER_ADMIN')">
+            <div class="nav-heading">Super admin</div>
+            <a class="nav-link" th:classappend="${active == 'companies'} ? 'active'" th:href="@{/companies}"><i class="bi bi-buildings"></i> Companies</a>
+        </nav>
+        <nav class="nav flex-column p-2" sec:authorize="!hasRole('SUPER_ADMIN')">
             <a class="nav-link" th:classappend="${active == 'dashboard'} ? 'active'" th:href="@{/}"><i class="bi bi-speedometer2"></i> Dashboard</a>
 
             <div class="nav-heading">Transactions</div>
@@ -47,6 +63,7 @@
             <a class="nav-link" th:classappend="${active == 'products'} ? 'active'" th:href="@{/products}"><i class="bi bi-box"></i> Products</a>
             <a class="nav-link" th:classappend="${active == 'categories'} ? 'active'" th:href="@{/categories}"><i class="bi bi-tags"></i> Categories</a>
             <a class="nav-link" th:classappend="${active == 'uoms'} ? 'active'" th:href="@{/uoms}"><i class="bi bi-rulers"></i> Units</a>
+            <a class="nav-link" th:classappend="${active == 'transfers'} ? 'active'" th:href="@{/transfers}"><i class="bi bi-arrow-left-right"></i> Stock Transfers</a>
 
             <div class="nav-heading">Parties</div>
             <a class="nav-link" th:classappend="${active == 'suppliers'} ? 'active'" th:href="@{/suppliers}"><i class="bi bi-building"></i> Suppliers</a>
@@ -58,9 +75,10 @@
             <a class="nav-link" th:classappend="${active == 'report-stock'} ? 'active'" th:href="@{/reports/stock}"><i class="bi bi-clipboard-data"></i> Stock Report</a>
             <a class="nav-link" th:classappend="${active == 'report-gst'} ? 'active'" th:href="@{/reports/gst}"><i class="bi bi-percent"></i> GST Report</a>
 
-            <th:block sec:authorize="hasRole('ADMIN')">
+            <th:block sec:authorize="hasRole('COMPANY_ADMIN')">
                 <div class="nav-heading">Admin</div>
-                <a class="nav-link" th:classappend="${active == 'settings'} ? 'active'" th:href="@{/settings}"><i class="bi bi-building-gear"></i> Company Settings</a>
+                <a class="nav-link" th:classappend="${active == 'settings'} ? 'active'" th:href="@{/settings}"><i class="bi bi-building-gear"></i> Company Profile</a>
+                <a class="nav-link" th:classappend="${active == 'branches'} ? 'active'" th:href="@{/branches}"><i class="bi bi-diagram-3"></i> Branches</a>
                 <a class="nav-link" th:classappend="${active == 'users'} ? 'active'" th:href="@{/users}"><i class="bi bi-person-gear"></i> Users</a>
             </th:block>
         </nav>

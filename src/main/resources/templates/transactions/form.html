@@ -2,7 +2,11 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(${title}, ${section}, ~{::main})}">
 <body>
 <main>
-    <h1 class="h3 mb-3" th:text="${isSale} ? 'New Sale' : 'New Purchase'">New</h1>
+    <h1 class="h3 mb-1" th:text="${isSale} ? 'New Sale' : 'New Purchase'">New</h1>
+    <p class="text-muted" th:if="${currentBranch != null}">Branch: <strong th:text="${currentBranch.name}"></strong>
+        <span th:if="${currentBranch.state}" th:text="|(${currentBranch.state})|"></span></p>
+    <div class="alert alert-warning" th:if="${currentBranch == null}">
+        <i class="bi bi-exclamation-triangle"></i> Choose a branch in the top bar before entering a bill.</div>
     <form id="txn-form" th:action="@{|/${section}|}" th:object="${form}" method="post"
           th:data-kind="${isSale} ? 'sale' : 'purchase'">
         <div class="card mb-3">
@@ -32,7 +36,7 @@
             <div class="table-responsive">
                 <table class="table mb-0" id="lines-table">
                     <thead>
-                    <tr><th>Product</th><th>In stock</th><th style="width: 120px">Qty</th>
+                    <tr><th>Product</th><th>In branch</th><th style="width: 120px">Qty</th>
                         <th style="width: 150px" th:text="${isSale} ? 'Selling price' : 'Cost price'">Price</th>
                         <th class="text-end">GST</th><th class="text-end">Tax</th>
                         <th class="text-end">Total</th><th></th></tr>

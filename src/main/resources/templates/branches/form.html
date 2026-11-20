@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Branch', 'branches', ~{::main})}">
+<body>
+<main>
+    <h1 class="h3 mb-3" th:text="${branch.id == null} ? 'Add Branch' : 'Edit Branch'">Branch</h1>
+    <div class="card" style="max-width: 750px">
+        <div class="card-body">
+            <form th:action="@{/branches}" th:object="${branch}" method="post">
+                <input type="hidden" th:field="*{id}">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label" for="name">Name *</label>
+                        <input type="text" class="form-control" th:field="*{name}" th:errorclass="is-invalid" required>
+                        <div class="invalid-feedback" th:errors="*{name}"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="code">Code *</label>
+                        <input type="text" class="form-control text-uppercase" th:field="*{code}" th:errorclass="is-invalid"
+                               maxlength="10" required placeholder="e.g. DEL">
+                        <div class="invalid-feedback" th:errors="*{code}"></div>
+                        <div class="form-text">Used in invoice numbers.</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="address">Address</label>
+                    <textarea class="form-control" rows="2" th:field="*{address}" th:errorclass="is-invalid"></textarea>
+                    <div class="invalid-feedback" th:errors="*{address}"></div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="phone">Phone</label>
+                        <input type="text" class="form-control" th:field="*{phone}" th:errorclass="is-invalid">
+                        <div class="invalid-feedback" th:errors="*{phone}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" class="form-control" th:field="*{email}" th:errorclass="is-invalid">
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="gstin">GSTIN</label>
+                        <input type="text" class="form-control text-uppercase" th:field="*{gstin}" th:errorclass="is-invalid"
+                               maxlength="15" placeholder="Only if registered separately">
+                        <div class="invalid-feedback" th:errors="*{gstin}"></div>
+                        <div class="form-text">Leave blank to print the company GSTIN on this branch's invoices.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="state">State</label>
+                        <select class="form-select" th:field="*{state}">
+                            <option value="">-- From GSTIN / not set --</option>
+                            <option th:each="s : ${states}" th:value="${s}" th:text="${s}"></option>
+                        </select>
+                        <div class="form-text">Decides CGST + SGST or IGST on this branch's bills.</div>
+                    </div>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" th:field="*{headOffice}" th:disabled="${branch.headOffice and branch.id != null}">
+                    <label class="form-check-label" th:for="${#ids.prev('headOffice')}">Head office</label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" th:field="*{active}" th:errorclass="is-invalid">
+                    <label class="form-check-label" th:for="${#ids.prev('active')}">Active</label>
+                    <div class="invalid-feedback" th:errors="*{active}"></div>
+                </div>
+                <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
+                <a th:href="@{/branches}" class="btn btn-link">Cancel</a>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <body>
 <main>
     <h1 class="h3 mb-3" th:text="${user.id == null} ? 'Add User' : 'Edit User'">User</h1>
-    <div class="card" style="max-width: 500px">
+    <div class="card" style="max-width: 550px">
         <div class="card-body">
             <form th:action="@{/users}" th:object="${user}" method="post">
                 <input type="hidden" th:field="*{id}">
@@ -21,10 +21,22 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="role">Role</label>
-                    <select class="form-select" th:field="*{role}">
-                        <option value="STAFF">Staff - day-to-day entry</option>
-                        <option value="ADMIN">Admin - can also manage users</option>
+                    <select class="form-select" th:field="*{role}" th:errorclass="is-invalid">
+                        <option value="STAFF">Staff - day-to-day entry in assigned branches</option>
+                        <option value="BRANCH_MANAGER">Branch manager - assigned branches</option>
+                        <option value="COMPANY_ADMIN">Company admin - all branches, users and settings</option>
                     </select>
+                    <div class="invalid-feedback" th:errors="*{role}"></div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-label">Branches</div>
+                    <div class="form-check" th:each="b : ${branches}">
+                        <input class="form-check-input" type="checkbox" th:field="*{branchIds}" th:value="${b.id}">
+                        <label class="form-check-label" th:for="${#ids.prev('branchIds')}"
+                               th:text="${b.active} ? ${b.name} : |${b.name} (inactive)|"></label>
+                    </div>
+                    <div class="text-danger small" th:if="${#fields.hasErrors('branchIds')}" th:errors="*{branchIds}"></div>
+                    <div class="form-text">Company admins can use every branch; for others, tick the branches they work in.</div>
                 </div>
                 <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
                 <a th:href="@{/users}" class="btn btn-link">Cancel</a>

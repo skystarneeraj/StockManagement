@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Size;
 
 /** Unit of measure, e.g. Pcs, Kg, Box. */
 @Entity
-@Table(name = "uoms")
-public class Uom {
+@Table(name = "uoms", uniqueConstraints = @UniqueConstraint(columnNames = {"company_id", "name"}))
+public class Uom extends CompanyOwned {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -15,7 +15,7 @@ public class Uom {
 
     @NotBlank
     @Size(max = 50)
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = 50)
     private String name;
 
     @Size(max = 255)

@@ -11,7 +11,7 @@
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead>
-                <tr><th>Bill No</th><th>Date</th><th th:text="${partyLabel}">Party</th><th class="text-end">Items</th>
+                <tr><th>Bill No</th><th>Date</th><th th:if="${currentBranch == null}">Branch</th><th th:text="${partyLabel}">Party</th><th class="text-end">Items</th>
                     <th class="text-end">GST</th><th class="text-end">Total</th><th class="text-end">Paid</th><th class="text-end">Due</th>
                     <th>Mode</th><th>By</th><th class="text-end">Actions</th></tr>
                 </thead>
@@ -19,6 +19,7 @@
                 <tr th:each="t : ${txns}">
                     <td><a th:href="@{|/${section}/${t.id}|}" th:text="${t.billNumber}"></a></td>
                     <td th:text="${@fmt.date(t.date)}"></td>
+                    <td th:if="${currentBranch == null}" th:text="${t.branch.name}"></td>
                     <td th:text="${t.partyName}"></td>
                     <td class="text-end" th:text="${#lists.size(t.items)}"></td>
                     <td class="text-end text-muted" th:text="${@fmt.money(t.taxAmount)}"></td>
@@ -35,7 +36,7 @@
                         </form>
                     </td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(txns)}"><td colspan="11" class="text-center text-muted py-4">No records yet.</td></tr>
+                <tr th:if="${#lists.isEmpty(txns)}"><td th:colspan="${currentBranch == null ? 12 : 11}" class="text-center text-muted py-4">No records yet.</td></tr>
                 </tbody>
             </table>
         </div>
